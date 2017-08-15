@@ -201,6 +201,17 @@ subscriptions model =
 -- View
 
 
+type alias Point =
+    ( Float, Float )
+
+
+type alias Line =
+    { start : Point
+    , end : Point
+    , color : Color
+    }
+
+
 view : Model -> Html Msg
 view model =
     case model of
@@ -291,20 +302,76 @@ systemView { colorscheme, progress } =
             , Attributes.width "100%"
             , Attributes.height "100%"
             , Attributes.preserveAspectRatio "xMidYMid meet"
-            , Attributes.viewBox "-0.1 -0.1 1.1 1.1"
+            , Attributes.viewBox "-0.1 -0.1 1.1 1.2"
             ]
-            (lines colorscheme.foreground progress)
+            (linesView colorscheme.foreground progress)
 
 
-lines : Color -> Float -> List (Svg a)
-lines color progress =
-    [ Svg.line
-        [ Attributes.x1 "0"
-        , Attributes.y1 "0"
-        , Attributes.x2 (toString progress)
-        , Attributes.y2 (toString progress)
+linesView : Color -> Float -> List (Svg a)
+linesView color progress =
+    let
+        lines =
+            [ Line ( 0, 0 ) ( 0, 0 ) color
+            , Line ( 0, 0 ) ( 0.25, 0.25 ) color
+            , Line ( 0.25, 0.25 ) ( 0.75, 0.25 ) color
+            , Line ( 0.75, 0.25 ) ( 0.75, 0.75 ) color
+            , Line ( 0.75, 0.75 ) ( 0.25, 0.75 ) color
+            , Line ( 0.25, 0.75 ) ( 0.25, 0.25 ) color
+            , Line ( 0.25, 0.25 ) ( 0, 0 ) color
+            , Line ( 0, 0 ) ( 0, 1 ) color
+            , Line ( 0, 1 ) ( 1, 1 ) color
+            , Line ( 1, 1 ) ( 1, 0 ) color
+            , Line ( 1, 0 ) ( 0, 0 ) color
+            , Line ( 0, 0 ) ( 0, 0 ) color
+            ]
+
+        multiplier =
+            List.length lines |> toFloat
+
+        offset =
+            (1 / multiplier)
+
+        interpolateLine index { start, end, color } =
+            let
+                begin =
+                    offset * toFloat index
+
+                amount =
+                    ((clamp begin (begin + offset) progress) - begin) * multiplier
+            in
+                lineView (Line start (interpolatePoint start end amount) color)
+    in
+        List.indexedMap interpolateLine lines
+
+
+clamp : comparable -> comparable -> comparable -> comparable
+clamp low high n =
+    if n < low then
+        low
+    else if n > high then
+        high
+    else
+        n
+
+
+interpolate : Float -> Float -> Float -> Float
+interpolate start end amount =
+    (amount * (end - start)) + start
+
+
+interpolatePoint : Point -> Point -> Float -> Point
+interpolatePoint ( x1, y1 ) ( x2, y2 ) amount =
+    ( interpolate x1 x2 amount, interpolate y1 y2 amount )
+
+
+lineView : Line -> Svg a
+lineView { start, end, color } =
+    Svg.line
+        [ Attributes.x1 (toString (Tuple.first start))
+        , Attributes.y1 (toString (Tuple.second start))
+        , Attributes.x2 (toString (Tuple.first end))
+        , Attributes.y2 (toString (Tuple.second end))
         , Attributes.strokeWidth "0.01"
         , Attributes.stroke (colorToHex color)
         ]
         []
-    ]
