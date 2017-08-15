@@ -10,6 +10,7 @@ import Mouse
 import Random
 import Svg exposing (Svg)
 import Svg.Attributes as Attributes
+import Svg.Path
 import Task
 import Window
 
@@ -54,6 +55,15 @@ type alias System =
     }
 
 
+type Operation
+    = Forward
+    | RotateClockwise
+    | RotateCounterClockwise
+    | StackPush
+    | StackPop
+    | Expand String
+
+
 type alias Colorscheme =
     { background : Color, foreground : Color }
 
@@ -87,22 +97,24 @@ update msg model =
 
         Build color ->
             let
+                system =
+                    { start = "NSH"
+                    , rules =
+                        Dict.fromList
+                            [ ( "F", "H-[F[-]]" )
+                            , ( "D", "NNHF" )
+                            , ( "N", "[]S-HFSHF" )
+                            , ( "H", "[-[[N]DS-]]" )
+                            , ( "S", "[N-+SHDN]" )
+                            ]
+                    }
+
                 image =
                     { colorscheme = toColorscheme color
                     , progress = 1
                     , iterations = 4
                     , angle = 90
-                    , system =
-                        { start = "NSH"
-                        , rules =
-                            Dict.fromList
-                                [ ( "F", "H-[F[-]]" )
-                                , ( "D", "NNHF" )
-                                , ( "N", "[]S-HFSHF" )
-                                , ( "H", "[-[[N]DS-]]" )
-                                , ( "S", "[N-+SHDN]" )
-                                ]
-                        }
+                    , system = system
                     , canvas = { width = 100 }
                     , editor = False
                     }
@@ -291,11 +303,43 @@ ruleView rule production html =
     Html.div [] [ Html.text (rule ++ ": " ++ production) ] :: html
 
 
+lines : Color -> List Line
+lines color =
+    [ Line ( 0, 0 ) ( 0, 0 ) color
+    , Line ( 0, 0 ) ( 0.25, 0.25 ) color
+    , Line ( 0.25, 0.25 ) ( 0.75, 0.25 ) color
+    , Line ( 0.75, 0.25 ) ( 0.75, 0.75 ) color
+    , Line ( 0.75, 0.75 ) ( 0.25, 0.75 ) color
+    , Line ( 0.25, 0.75 ) ( 0.25, 0.25 ) color
+    , Line ( 0.25, 0.25 ) ( 0, 0 ) color
+    , Line ( 0, 0 ) ( 0, 1 ) color
+    , Line ( 0, 1 ) ( 1, 1 ) color
+    , Line ( 1, 1 ) ( 1, 0 ) color
+    , Line ( 1, 0 ) ( 0, 0 ) color
+    , Line ( 0, 0 ) ( 0, 0 ) color
+    ]
+
+
 systemView : Image -> Svg a
 systemView { colorscheme, progress } =
     let
         styles =
             "background-color:" ++ colorToHex colorscheme.background
+
+        points =
+            [ ( 0, 0 )
+            , ( 0.25, 0.25 )
+            , ( 0.75, 0.25 )
+            , ( 0.75, 0.75 )
+            , ( 0.25, 0.75 )
+            , ( 0.25, 0.25 )
+            , ( 0, 0 )
+            , ( 0, 1 )
+            , ( 1, 1 )
+            , ( 1, 0 )
+            , ( 0, 0 )
+            ]
+                |> interpolatePoints progress
     in
         Svg.svg
             [ Attributes.style styles
@@ -304,44 +348,7 @@ systemView { colorscheme, progress } =
             , Attributes.preserveAspectRatio "xMidYMid meet"
             , Attributes.viewBox "-0.1 -0.1 1.1 1.2"
             ]
-            (linesView colorscheme.foreground progress)
-
-
-linesView : Color -> Float -> List (Svg a)
-linesView color progress =
-    let
-        lines =
-            [ Line ( 0, 0 ) ( 0, 0 ) color
-            , Line ( 0, 0 ) ( 0.25, 0.25 ) color
-            , Line ( 0.25, 0.25 ) ( 0.75, 0.25 ) color
-            , Line ( 0.75, 0.25 ) ( 0.75, 0.75 ) color
-            , Line ( 0.75, 0.75 ) ( 0.25, 0.75 ) color
-            , Line ( 0.25, 0.75 ) ( 0.25, 0.25 ) color
-            , Line ( 0.25, 0.25 ) ( 0, 0 ) color
-            , Line ( 0, 0 ) ( 0, 1 ) color
-            , Line ( 0, 1 ) ( 1, 1 ) color
-            , Line ( 1, 1 ) ( 1, 0 ) color
-            , Line ( 1, 0 ) ( 0, 0 ) color
-            , Line ( 0, 0 ) ( 0, 0 ) color
-            ]
-
-        multiplier =
-            List.length lines |> toFloat
-
-        offset =
-            (1 / multiplier)
-
-        interpolateLine index { start, end, color } =
-            let
-                begin =
-                    offset * toFloat index
-
-                amount =
-                    ((clamp begin (begin + offset) progress) - begin) * multiplier
-            in
-                lineView (Line start (interpolatePoint start end amount) color)
-    in
-        List.indexedMap interpolateLine lines
+            [ path points colorscheme.foreground ]
 
 
 clamp : comparable -> comparable -> comparable -> comparable
@@ -364,14 +371,43 @@ interpolatePoint ( x1, y1 ) ( x2, y2 ) amount =
     ( interpolate x1 x2 amount, interpolate y1 y2 amount )
 
 
-lineView : Line -> Svg a
-lineView { start, end, color } =
-    Svg.line
-        [ Attributes.x1 (toString (Tuple.first start))
-        , Attributes.y1 (toString (Tuple.second start))
-        , Attributes.x2 (toString (Tuple.first end))
-        , Attributes.y2 (toString (Tuple.second end))
-        , Attributes.strokeWidth "0.01"
-        , Attributes.stroke (colorToHex color)
-        ]
-        []
+interpolatePoints : Float -> List Point -> List Point
+interpolatePoints progress points =
+    let
+        multiplier =
+            List.length points |> toFloat
+
+        permitPoint ( index, point ) list =
+            if toFloat index > (progress * multiplier) then
+                    list
+                else
+                    point :: list
+    in
+        points
+        |> List.indexedMap (,)
+        |> List.foldl permitPoint []
+
+
+path : List Point -> Color -> Svg a
+path points color =
+    let
+        polygon =
+            case points of
+                [] ->
+                    Svg.Path.emptySubpath
+
+                first :: rest ->
+                    Svg.Path.subpath
+                        (Svg.Path.startAt first)
+                        Svg.Path.open
+                        [ Svg.Path.lineToMany rest ]
+    in
+        Svg.path
+            [ Attributes.d <| Svg.Path.pathToString [ polygon ]
+            , Attributes.fill "none"
+            , Attributes.stroke <| colorToHex color
+            , Attributes.strokeWidth "0.02"
+            , Attributes.strokeLinecap "round"
+            , Attributes.strokeLinejoin "round"
+            ]
+            []
