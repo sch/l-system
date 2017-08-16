@@ -115,7 +115,7 @@ update msg model =
                     , angle = 90
                     , system = system
                     , canvas = { width = 100 }
-                    , editor = True
+                    , editor = False
                     }
             in
                 ( Page image, Cmd.none )
@@ -328,15 +328,34 @@ view model =
             Html.text "loading..."
 
         Page system ->
-            Html.div
-                [ Html.Attributes.style
-                    [ ( "display", "flex" )
-                    , ( "height", "100vh" )
+            Html.div []
+                [ Html.div
+                    [ Html.Attributes.style
+                        [ ( "display", "flex" )
+                        , ( "height", "100vh" )
+                        ]
                     ]
-                ]
-                [ systemView system
-                , controlsView system
-                , Html.node "style" [] [ Html.text stylesheet ]
+                    [ systemView system
+                    , controlsView system
+                    , Html.node "style" [] [ Html.text stylesheet ]
+                    ]
+                , Html.div
+                    [ Html.Attributes.style
+                        [ ( "padding", "50px" )
+                        , ( "max-width", "700px" )
+                        , ( "margin-left", "auto" )
+                        , ( "margin-right", "auto" )
+                        , ( "line-height", "1.8" )
+                        ]
+                    ]
+                    [ Html.h2 [] [ Html.text "What is an L-system?" ]
+                    , Html.p [] [ Html.text "An L-system or Lindenmayer system is a parallel rewriting system and a type of formal grammar. An L-system consists of an alphabet of symbols that can be used to make strings, a collection of production rules that expand each symbol into some larger string of symbols, an initial \"axiom\" string from which to begin construction, and a mechanism for translating the generated strings into geometric structures. L-systems were introduced and developed in 1968 by Aristid Lindenmayer, a Hungarian theoretical biologist and botanist at the University of Utrecht. Lindenmayer used L-systems to describe the behaviour of plant cells and to model the growth processes of plant development. L-systems have also been used to model the morphology of a variety of organisms[1] and can be used to generate self-similar fractals such as iterated function systems." ]
+                    , Html.h2 [] [ Html.text "Origins" ]
+                    , Html.p [] [ Html.text "As a biologist, Lindenmayer worked with yeast and filamentous fungi and studied the growth patterns of various types of algae, such as the cyanobacteria Anabaena catenula. Originally the L-systems were devised to provide a formal description of the development of such simple multicellular organisms, and to illustrate the neighbourhood relationships between plant cells. Later on, this system was extended to describe higher plants and complex branching structures." ]
+                    , Html.h2 [] [ Html.text "L-system structure" ]
+                    , Html.p [] [ Html.text "The recursive nature of the L-system rules leads to self-similarity and thereby, fractal-like forms are easy to describe with an L-system. Plant models and natural-looking organic forms are easy to define, as by increasing the recursion level the form slowly 'grows' and becomes more complex. Lindenmayer systems are also popular in the generation of artificial life." ]
+                    , Html.p [] [ Html.text "L-system grammars are very similar to the semi-Thue grammar (see Chomsky hierarchy). L-systems are now commonly known as parametric L systems, defined as a tuple" ]
+                    ]
                 ]
 
 
@@ -471,16 +490,24 @@ systemView { colorscheme, progress, system, iterations } =
     let
         styles =
             "background-color:" ++ colorToHex colorscheme.background
+
+        path =
+            expand iterations system |> toPath
     in
         Svg.svg
             [ Attributes.style styles
             , Attributes.width "100%"
             , Attributes.height "100%"
             , Attributes.preserveAspectRatio "xMidYMid meet"
-            , Attributes.viewBox "-100 -100 200 200"
+            , Attributes.viewBox <| viewboxFromPath path
             , Svg.Events.on "mousemove" (Json.Decode.map MoveMouse mousePosition)
             ]
-            [ pathView (system |> expand iterations |> toPath) colorscheme.foreground ]
+            [ pathView path colorscheme.foreground ]
+
+
+viewboxFromPath : Svg.Path.Subpath -> String
+viewboxFromPath _ =
+    "-100 -200 300 400"
 
 
 mousePosition : Json.Decode.Decoder Mouse.Position
