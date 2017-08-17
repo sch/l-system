@@ -10,8 +10,8 @@ import Json.Decode
 import Random
 import Svg exposing (Svg)
 import Svg.Attributes as Attributes
-import Svg.Path
 import Svg.Events
+import Svg.Path
 import Task
 
 
@@ -44,12 +44,20 @@ type alias Image =
 
 
 type alias Rules =
-    Dict Char (List Char)
+    Dict Char Production
+
+
+type alias Angle =
+    Int
+
+
+type alias Production =
+    List Char
 
 
 type alias System =
-    { start : List Char
-    , angle : Int
+    { start : Production
+    , angle : Angle
     , iterations : Int
     , rules : Rules
     }
@@ -82,39 +90,52 @@ init =
         loadCommand =
             Task.succeed Randomize |> Task.perform identity
     in
-        ( Loading, loadCommand )
+    ( Loading, loadCommand )
 
 
-toRules : List ( Char, String ) -> Rules
-toRules rules =
-    rules
-        |> List.map (\( char, str ) -> ( char, String.toList str ))
-        |> Dict.fromList
+parseAsSystem :
+    { start : String
+    , angle : Int
+    , iterations : Int
+    , rules : List ( Char, String )
+    }
+    -> System
+parseAsSystem definition =
+    let
+        start =
+            String.toList definition.start
+
+        rules =
+            definition.rules
+                |> List.map (\( char, str ) -> ( char, String.toList str ))
+                |> Dict.fromList
+    in
+    { definition | rules = rules, start = start }
 
 
 systemOne : System
 systemOne =
-    { start = String.toList "NSH"
-    , angle = 90
-    , iterations = 5
-    , rules =
-        toRules
+    parseAsSystem
+        { start = "NSH"
+        , angle = 90
+        , iterations = 5
+        , rules =
             [ ( 'F', "H-[F[-]]" )
             , ( 'D', "NNHF" )
             , ( 'N', "[]S-HFSHF" )
             , ( 'H', "[-[[N]DS-]]" )
             , ( 'S', "[N-+SHDN]" )
             ]
-    }
+        }
 
 
 systemTwo : System
 systemTwo =
-    { start = String.toList "S"
-    , angle = 60
-    , iterations = 6
-    , rules =
-        toRules
+    parseAsSystem
+        { start = "S"
+        , angle = 60
+        , iterations = 6
+        , rules =
             [ ( 'F', "JS" )
             , ( 'O', "F+F+FF" )
             , ( 'L', "JF++" )
@@ -122,50 +143,50 @@ systemTwo =
             , ( 'J', "OF+" )
             , ( 'S', "[+S]LS+V" )
             ]
-    }
+        }
 
 
 systemThree : System
 systemThree =
-    { start = String.toList "ZZ"
-    , angle = 45
-    , iterations = 5
-    , rules =
-        toRules
+    parseAsSystem
+        { start = "ZZ"
+        , angle = 45
+        , iterations = 5
+        , rules =
             [ ( 'F', "-ZFFFF-FF" )
             , ( 'Z', "PA" )
             , ( 'P', "+AZ" )
             , ( 'A', "F+[ZF]AZ" )
             ]
-    }
+        }
 
 
 systemFour : System
 systemFour =
-    { start = String.toList "FFPF"
-    , angle = 60
-    , iterations = 2
-    , rules =
-        toRules
+    parseAsSystem
+        { start = "FFPF"
+        , angle = 60
+        , iterations = 2
+        , rules =
             [ ( 'F', "PF++F[FF-F+PF+FPP][F]FFPF" )
             , ( 'P', "" )
             ]
-    }
+        }
 
 
 systemFive : System
 systemFive =
-    { start = String.toList "TOT"
-    , angle = 60
-    , iterations = 5
-    , rules =
-        toRules
+    parseAsSystem
+        { start = "TOT"
+        , angle = 60
+        , iterations = 2
+        , rules =
             [ ( 'F', "O+" )
             , ( 'H', "F+F+" )
             , ( 'O', "T[OFF]+FH" )
             , ( 'T', "FF+HOTO" )
             ]
-    }
+        }
 
 
 
@@ -188,7 +209,7 @@ update msg model =
                     , editor = False
                     }
             in
-                ( Page image, Cmd.none )
+            ( Page image, Cmd.none )
 
         ChangeProgress progress ->
             case model of
@@ -200,7 +221,7 @@ update msg model =
                         page =
                             Page { image | progress = progress }
                     in
-                        ( page, Cmd.none )
+                    ( page, Cmd.none )
 
         ShowEditor ->
             case model of
@@ -219,6 +240,8 @@ update msg model =
                     ( Page { image | editor = False }, Cmd.none )
 
 
+{-| Generator for a random pleasing color.
+-}
 randomColor : Random.Generator Color
 randomColor =
     let
@@ -231,9 +254,12 @@ randomColor =
         lightness =
             Random.float 0.1 0.9
     in
-        Random.map3 Color.hsl hue saturation lightness
+    Random.map3 Color.hsl hue saturation lightness
 
 
+{-| Builds a complementary background color for the given foreground color,
+ensuring that there's enough contrast between the two.
+-}
 toColorscheme : Color -> Colorscheme
 toColorscheme color =
     let
@@ -252,10 +278,10 @@ toColorscheme color =
         foreground =
             Color.hsl hue saturation (1 - normalizedLightness)
     in
-        Colorscheme background foreground
+    Colorscheme background foreground
 
 
-expand : System -> List Char
+expand : System -> Production
 expand system =
     if system.iterations < 1 then
         system.start
@@ -265,27 +291,75 @@ expand system =
                 Dict.get char system.rules
                     |> Maybe.withDefault []
         in
-            expand
-                { system
-                    | start = List.concatMap expansionFor system.start
-                    , iterations = system.iterations - 1
-                }
+        expand
+            { system
+                | start = List.concatMap expansionFor system.start
+                , iterations = system.iterations - 1
+            }
 
 
-toPath : Int -> List Char -> Svg.Path.Subpath
+type alias Stack a =
+    List a
+
+
+push : a -> Stack a -> Stack a
+push item stack =
+    item :: stack
+
+
+pop : Stack a -> Maybe ( a, Stack a )
+pop stack =
+    case stack of
+        [] ->
+            Nothing
+
+        item :: stack ->
+            Just ( item, stack )
+
+
+toPath : Int -> Production -> Svg.Path.Subpath
 toPath angle items =
     Svg.Path.subpath
         (Svg.Path.startAt ( 0, 0 ))
         Svg.Path.open
-        (toPathHelp items { current = ( 0, 0 ), angle = angle, stack = [] })
+        (toPathHelp items { current = start, stack = [] })
+
+
+type Position
+    = Position Point Angle
+
+
+start : Position
+start =
+    Position ( 0, 0 ) 0
+
+
+clockwise : Angle -> Position -> Position
+clockwise degrees (Position point angle) =
+    Position point (angle + degrees)
+
+
+counterClockwise : Angle -> Position -> Position
+counterClockwise degrees =
+    clockwise (negate degrees)
+
+
+advance : Int -> Position -> Position
+advance amount (Position ( x, y ) angle) =
+    let
+        point =
+            ( cos (degrees <| toFloat angle) * 20 + x
+            , sin (degrees <| toFloat angle) * 20 + y
+            )
+    in
+    Position point angle
 
 
 toPathHelp :
-    List Char
+    Production
     ->
-        { current : ( Float, Float )
-        , angle : Int
-        , stack : List ( ( Float, Float ), Int )
+        { current : Position
+        , stack : Stack Position
         }
     -> List Svg.Path.Instruction
 toPathHelp items cursor =
@@ -297,44 +371,47 @@ toPathHelp items cursor =
             case first of
                 'F' ->
                     let
-                        ( x, y ) =
-                            cursor.current
+                        nextPosition =
+                            cursor.current |> advance 20
 
-                        point =
-                            ( cos (degrees <| toFloat cursor.angle) * 20 + x
-                            , sin (degrees <| toFloat cursor.angle) * 20 + y
-                            )
+                        nextCursor =
+                            { cursor | current = nextPosition }
+
+                        (Position point _) =
+                            nextPosition
                     in
-                        Svg.Path.lineTo point :: (toPathHelp rest { cursor | current = point })
+                    Svg.Path.lineTo point :: toPathHelp rest nextCursor
 
                 '+' ->
-                    toPathHelp rest { cursor | angle = cursor.angle + 60 }
+                    toPathHelp rest { cursor | current = clockwise 60 cursor.current }
 
                 '-' ->
-                    toPathHelp rest { cursor | angle = cursor.angle - 60 }
+                    toPathHelp rest { cursor | current = counterClockwise 60 cursor.current }
 
                 '[' ->
                     let
                         newStack =
-                            ( cursor.current, cursor.angle ) :: cursor.stack
+                            cursor.stack |> push cursor.current
                     in
-                        toPathHelp rest { cursor | stack = newStack }
+                    toPathHelp rest { cursor | stack = newStack }
 
                 ']' ->
-                    case cursor.stack of
-                        [] ->
+                    case pop cursor.stack of
+                        Nothing ->
                             toPathHelp rest cursor
 
-                        ( point, angle ) :: restOfTheStack ->
+                        Just ( position, restOfTheStack ) ->
                             let
                                 nextCursor =
                                     { cursor
                                         | stack = restOfTheStack
-                                        , current = point
-                                        , angle = angle
+                                        , current = position
                                     }
+
+                                (Position point _) =
+                                    position
                             in
-                                Svg.Path.lineTo point :: toPathHelp rest nextCursor
+                            Svg.Path.lineTo point :: toPathHelp rest nextCursor
 
                 _ ->
                     toPathHelp rest cursor
@@ -419,6 +496,7 @@ prose =
             , ( "margin-left", "auto" )
             , ( "margin-right", "auto" )
             , ( "line-height", "1.8" )
+            , ( "font-family", "-apple-system" )
             ]
         ]
         [ Html.h2 [] [ Html.text "What is an L-system?" ]
@@ -447,7 +525,7 @@ controlsView { system, editor } =
             ]
         ]
         (if editor then
-            ([ Html.div
+            [ Html.div
                 [ Html.Attributes.style
                     [ ( "margin-bottom", "80px" )
                     , ( "display", "flex" )
@@ -459,26 +537,25 @@ controlsView { system, editor } =
                     [ Html.text "l-system builder" ]
                 , buttonTo CloseEditor "close"
                 ]
-             , Html.div
+            , Html.div
                 [ Html.Attributes.style [ ( "margin-bottom", "40px" ) ] ]
                 [ Html.text <| "start rule: " ++ String.fromList system.start ]
-             , Html.div [] [ Html.text "rules" ]
-             , Html.div
+            , Html.div [] [ Html.text "rules" ]
+            , Html.div
                 [ Html.Attributes.style [ ( "margin-bottom", "40px" ) ] ]
                 (rulesView system.rules)
-             , Html.div
+            , Html.div
                 [ Html.Attributes.style [ ( "margin-bottom", "40px" ) ] ]
                 [ Html.text <| "angle: " ++ (system.angle |> toString |> String.left 5) ++ " degrees" ]
-             , Html.div
+            , Html.div
                 [ Html.Attributes.style [ ( "text-wrap", "break-word" ), ( "margin-bottom", "40px" ) ] ]
                 [ Html.text "valid characters in the rules include [ (add a new level on the stack), ] (pop a level off the stack), + (turn clockwise by given angle), - (counterclockwise), or another rule. The rules above will get expanded into:" ]
-             , Html.div
+            , Html.div
                 [ Html.Attributes.style [ ( "text-wrap", "break-word" ) ] ]
                 [ Html.text <| String.fromList <| expand system ]
-             ]
-            )
+            ]
          else
-            ([ Html.div
+            [ Html.div
                 [ Html.Attributes.style
                     [ ( "color", "white" )
                     , ( "margin-bottom", "80px" )
@@ -492,8 +569,7 @@ controlsView { system, editor } =
                 , Html.Events.onClick ShowEditor
                 ]
                 [ Html.text "l-system builder" ]
-             ]
-            )
+            ]
         )
 
 
@@ -519,7 +595,7 @@ rulesView rules =
     Dict.foldl ruleView [] rules
 
 
-ruleView : Char -> List Char -> List (Html msg) -> List (Html msg)
+ruleView : Char -> Production -> List (Html msg) -> List (Html msg)
 ruleView rule production html =
     Html.div [] [ Html.text (String.cons rule ": " ++ String.fromList production) ] :: html
 
@@ -531,20 +607,20 @@ systemView { colorscheme, progress, system } =
             "background-color:" ++ colorToHex colorscheme.background
 
         path =
-            expand system |> toPath system.angle
+            expand system |> toPath system.angle |> List.singleton
     in
-        Svg.svg
-            [ Attributes.style styles
-            , Attributes.width "100%"
-            , Attributes.height "100%"
-            , Attributes.preserveAspectRatio "xMidYMid meet"
-            , Attributes.viewBox <| viewboxFromPath path
-            , Svg.Events.on "mousemove" (Json.Decode.map ChangeProgress toProgress)
-            ]
-            [ pathView path colorscheme.foreground ]
+    Svg.svg
+        [ Attributes.style styles
+        , Attributes.width "100%"
+        , Attributes.height "100%"
+        , Attributes.preserveAspectRatio "xMidYMid meet"
+        , Attributes.viewBox <| viewboxFromPath path
+        , Svg.Events.on "mousemove" (Json.Decode.map ChangeProgress toProgress)
+        ]
+        [ pathView path colorscheme.foreground ]
 
 
-viewboxFromPath : Svg.Path.Subpath -> String
+viewboxFromPath : Svg.Path.Path -> String
 viewboxFromPath _ =
     "-100 -300 400 500"
 
@@ -588,9 +664,9 @@ interpolatePoints progress points =
             else
                 point :: list
     in
-        points
-            |> List.indexedMap (,)
-            |> List.foldl permitPoint []
+    points
+        |> List.indexedMap (,)
+        |> List.foldl permitPoint []
 
 
 interpolatePath : Float -> Svg.Path.Subpath -> Svg.Path.Subpath
@@ -611,10 +687,10 @@ polygon points =
                 [ Svg.Path.lineToMany rest ]
 
 
-pathView : Svg.Path.Subpath -> Color -> Svg a
-pathView subpath color =
+pathView : Svg.Path.Path -> Color -> Svg a
+pathView path color =
     Svg.path
-        [ Attributes.d <| Svg.Path.pathToString [ subpath ]
+        [ Attributes.d <| Svg.Path.pathToStringWithPrecision 2 path
         , Attributes.fill "none"
         , Attributes.stroke <| colorToHex color
         , Attributes.strokeLinecap "round"
