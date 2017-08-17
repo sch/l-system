@@ -2,16 +2,12 @@ module Main exposing (main)
 
 import Article
 import Color exposing (Color)
-import Color.Convert exposing (colorToHex)
+import Colorscheme exposing (Colorscheme)
 import Controls
 import Dict exposing (Dict)
-import Dom
 import Html exposing (Html)
 import Random
-import Stack exposing (Stack)
-import Svg exposing (Svg)
-import Svg.Attributes as Attributes
-import Svg.Path
+import System exposing (System)
 import Task
 
 
@@ -37,43 +33,9 @@ type Model
 type alias Image =
     { colorscheme : Colorscheme
     , progress : Float
-    , canvas : { width : Int }
     , system : System
     , editor : Bool
     }
-
-
-type alias Rules =
-    Dict Char Production
-
-
-type alias Angle =
-    Int
-
-
-type alias Production =
-    List Char
-
-
-type alias System =
-    { start : Production
-    , angle : Angle
-    , iterations : Int
-    , rules : Rules
-    }
-
-
-type Operation
-    = Forward
-    | RotateClockwise
-    | RotateCounterClockwise
-    | StackPush
-    | StackPop
-    | Expand String
-
-
-type alias Colorscheme =
-    { background : Color, foreground : Color }
 
 
 type Msg
@@ -111,6 +73,23 @@ parseAsSystem definition =
                 |> Dict.fromList
     in
     { definition | rules = rules, start = start }
+
+
+{-| kind of dumb, but it's a nice way to swipe through all the examples I have
+while testing.
+-}
+pickSystem : Float -> System
+pickSystem percentage =
+    if percentage < 0.2 then
+        systemOne
+    else if percentage > 0.2 && percentage < 0.4 then
+        systemTwo
+    else if percentage > 0.4 && percentage < 0.6 then
+        systemThree
+    else if percentage > 0.6 && percentage < 0.8 then
+        systemFour
+    else
+        systemFive
 
 
 systemOne : System
@@ -202,10 +181,9 @@ update msg model =
         Build color ->
             let
                 image =
-                    { colorscheme = toColorscheme color
+                    { colorscheme = Colorscheme.complementary color
                     , progress = 1
                     , system = systemFive
-                    , canvas = { width = 100 }
                     , editor = False
                     }
             in
@@ -257,147 +235,6 @@ randomColor =
     Random.map3 Color.hsl hue saturation lightness
 
 
-{-| Builds a complementary background color for the given foreground color,
-ensuring that there's enough contrast between the two.
--}
-toColorscheme : Color -> Colorscheme
-toColorscheme color =
-    let
-        { hue, saturation, lightness } =
-            Color.toHsl color
-
-        normalizedLightness =
-            if abs (0.5 - lightness) < 0.2 then
-                lightness - 0.3
-            else
-                lightness
-
-        background =
-            Color.hsl hue saturation normalizedLightness
-
-        foreground =
-            Color.hsl hue saturation (1 - normalizedLightness)
-    in
-    Colorscheme background foreground
-
-
-expand : System -> Production
-expand system =
-    if system.iterations < 1 then
-        system.start
-    else
-        let
-            expansionFor char =
-                Dict.get char system.rules
-                    |> Maybe.withDefault []
-        in
-        expand
-            { system
-                | start = List.concatMap expansionFor system.start
-                , iterations = system.iterations - 1
-            }
-
-
-type Position
-    = Position Point Angle
-
-
-start : Position
-start =
-    Position ( 0, 0 ) 0
-
-
-clockwise : Angle -> Position -> Position
-clockwise degrees (Position point angle) =
-    Position point (angle + degrees)
-
-
-counterClockwise : Angle -> Position -> Position
-counterClockwise degrees =
-    clockwise (negate degrees)
-
-
-advance : Int -> Position -> Position
-advance amount (Position ( x, y ) angle) =
-    let
-        point =
-            ( cos (degrees <| toFloat angle) * 20 + x
-            , sin (degrees <| toFloat angle) * 20 + y
-            )
-    in
-    Position point angle
-
-
-toPath : Int -> Production -> Svg.Path.Subpath
-toPath angle items =
-    Svg.Path.subpath
-        (Svg.Path.startAt ( 0, 0 ))
-        Svg.Path.open
-        (toPathHelp items { current = start, stack = [] })
-
-
-toPathHelp :
-    Production
-    ->
-        { current : Position
-        , stack : Stack Position
-        }
-    -> List Svg.Path.Instruction
-toPathHelp items cursor =
-    case items of
-        [] ->
-            []
-
-        first :: rest ->
-            case first of
-                'F' ->
-                    let
-                        nextPosition =
-                            cursor.current |> advance 20
-
-                        nextCursor =
-                            { cursor | current = nextPosition }
-
-                        (Position point _) =
-                            nextPosition
-                    in
-                    Svg.Path.lineTo point :: toPathHelp rest nextCursor
-
-                '+' ->
-                    toPathHelp rest { cursor | current = clockwise 60 cursor.current }
-
-                '-' ->
-                    toPathHelp rest { cursor | current = counterClockwise 60 cursor.current }
-
-                '[' ->
-                    let
-                        newStack =
-                            cursor.stack |> Stack.push cursor.current
-                    in
-                    toPathHelp rest { cursor | stack = newStack }
-
-                ']' ->
-                    case Stack.pop cursor.stack of
-                        Nothing ->
-                            toPathHelp rest cursor
-
-                        Just ( position, restOfTheStack ) ->
-                            let
-                                nextCursor =
-                                    { cursor
-                                        | stack = restOfTheStack
-                                        , current = position
-                                    }
-
-                                (Position point _) =
-                                    position
-                            in
-                            Svg.Path.lineTo point :: toPathHelp rest nextCursor
-
-                _ ->
-                    toPathHelp rest cursor
-
-
 
 -- Subscriptions
 
@@ -411,17 +248,6 @@ subscriptions _ =
 -- View
 
 
-type alias Point =
-    ( Float, Float )
-
-
-type alias Line =
-    { start : Point
-    , end : Point
-    , color : Color
-    }
-
-
 view : Model -> Html Msg
 view model =
     case model of
@@ -431,7 +257,9 @@ view model =
         Page image ->
             Article.frame
                 image.editor
-                [ systemView image, controlsView image ]
+                [ System.view image.colorscheme image.progress ChangeProgress (pickSystem image.progress)
+                , controlsView image
+                ]
                 prose
 
 
@@ -469,7 +297,7 @@ controlsView { system, editor } =
 
         -- What the production looks like after so many iterations
         expandedText =
-            String.fromList <| expand system
+            String.fromList <| System.expand system
 
         rulesToString char production dict =
             Dict.insert (toString char) (String.fromList production) dict
@@ -485,90 +313,3 @@ controlsView { system, editor } =
         , Controls.text "valid characters in the rules include [ (add a new level on the stack), ] (pop a level off the stack), + (turn clockwise by given angle), - (counterclockwise), or another rule. The rules above will get expanded into:"
         , Controls.text expandedText
         ]
-
-
-systemView : Image -> Svg Msg
-systemView { colorscheme, progress, system } =
-    let
-        styles =
-            "background-color:" ++ colorToHex colorscheme.background
-
-        path =
-            expand system |> toPath system.angle |> List.singleton
-    in
-    Svg.svg
-        [ Attributes.style styles
-        , Attributes.width "100%"
-        , Attributes.height "100%"
-        , Attributes.preserveAspectRatio "xMidYMid meet"
-        , Attributes.viewBox <| viewboxFromPath path
-        , Dom.mouseHorizontal ChangeProgress
-        ]
-        [ pathView path colorscheme.foreground ]
-
-
-viewboxFromPath : Svg.Path.Path -> String
-viewboxFromPath _ =
-    "-100 -300 400 500"
-
-
-clamp : comparable -> comparable -> comparable -> comparable
-clamp low high n =
-    if n < low then
-        low
-    else if n > high then
-        high
-    else
-        n
-
-
-interpolate : Float -> Float -> Float -> Float
-interpolate start end amount =
-    (amount * (end - start)) + start
-
-
-interpolatePoint : Point -> Point -> Float -> Point
-interpolatePoint ( x1, y1 ) ( x2, y2 ) amount =
-    ( interpolate x1 x2 amount, interpolate y1 y2 amount )
-
-
-interpolatePoints : Float -> List Point -> List Point
-interpolatePoints progress points =
-    let
-        multiplier =
-            List.length points |> toFloat
-
-        permitPoint ( index, point ) list =
-            if toFloat index > (progress * multiplier) then
-                list
-            else
-                point :: list
-    in
-    points
-        |> List.indexedMap (,)
-        |> List.foldl permitPoint []
-
-
-polygon : List Point -> Svg.Path.Subpath
-polygon points =
-    case points of
-        [] ->
-            Svg.Path.emptySubpath
-
-        first :: rest ->
-            Svg.Path.subpath
-                (Svg.Path.startAt first)
-                Svg.Path.open
-                [ Svg.Path.lineToMany rest ]
-
-
-pathView : Svg.Path.Path -> Color -> Svg a
-pathView path color =
-    Svg.path
-        [ Attributes.d <| Svg.Path.pathToStringWithPrecision 2 path
-        , Attributes.fill "none"
-        , Attributes.stroke <| colorToHex color
-        , Attributes.strokeLinecap "round"
-        , Attributes.strokeLinejoin "round"
-        ]
-        []
