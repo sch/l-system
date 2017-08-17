@@ -5,13 +5,12 @@ import Color exposing (Color)
 import Color.Convert exposing (colorToHex)
 import Controls
 import Dict exposing (Dict)
+import Dom
 import Html exposing (Html)
-import Json.Decode
 import Random
 import Stack exposing (Stack)
 import Svg exposing (Svg)
 import Svg.Attributes as Attributes
-import Svg.Events
 import Svg.Path
 import Task
 
@@ -378,7 +377,7 @@ toPathHelp items cursor =
                     toPathHelp rest { cursor | stack = newStack }
 
                 ']' ->
-                    case Stackkpop cursor.stack of
+                    case Stack.pop cursor.stack of
                         Nothing ->
                             toPathHelp rest cursor
 
@@ -503,7 +502,7 @@ systemView { colorscheme, progress, system } =
         , Attributes.height "100%"
         , Attributes.preserveAspectRatio "xMidYMid meet"
         , Attributes.viewBox <| viewboxFromPath path
-        , Svg.Events.on "mousemove" (Json.Decode.map ChangeProgress toProgress)
+        , Dom.mouseHorizontal ChangeProgress
         ]
         [ pathView path colorscheme.foreground ]
 
@@ -511,13 +510,6 @@ systemView { colorscheme, progress, system } =
 viewboxFromPath : Svg.Path.Path -> String
 viewboxFromPath _ =
     "-100 -300 400 500"
-
-
-toProgress : Json.Decode.Decoder Float
-toProgress =
-    Json.Decode.map2 (/)
-        (Json.Decode.field "clientX" Json.Decode.float)
-        (Json.Decode.at [ "target", "clientWidth" ] Json.Decode.float)
 
 
 clamp : comparable -> comparable -> comparable -> comparable
