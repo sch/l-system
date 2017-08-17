@@ -8,6 +8,7 @@ import Dict exposing (Dict)
 import Html exposing (Html)
 import Json.Decode
 import Random
+import Stack exposing (Stack)
 import Svg exposing (Svg)
 import Svg.Attributes as Attributes
 import Svg.Events
@@ -298,33 +299,6 @@ expand system =
             }
 
 
-type alias Stack a =
-    List a
-
-
-push : a -> Stack a -> Stack a
-push item stack =
-    item :: stack
-
-
-pop : Stack a -> Maybe ( a, Stack a )
-pop stack =
-    case stack of
-        [] ->
-            Nothing
-
-        item :: stack ->
-            Just ( item, stack )
-
-
-toPath : Int -> Production -> Svg.Path.Subpath
-toPath angle items =
-    Svg.Path.subpath
-        (Svg.Path.startAt ( 0, 0 ))
-        Svg.Path.open
-        (toPathHelp items { current = start, stack = [] })
-
-
 type Position
     = Position Point Angle
 
@@ -353,6 +327,14 @@ advance amount (Position ( x, y ) angle) =
             )
     in
     Position point angle
+
+
+toPath : Int -> Production -> Svg.Path.Subpath
+toPath angle items =
+    Svg.Path.subpath
+        (Svg.Path.startAt ( 0, 0 ))
+        Svg.Path.open
+        (toPathHelp items { current = start, stack = [] })
 
 
 toPathHelp :
@@ -391,12 +373,12 @@ toPathHelp items cursor =
                 '[' ->
                     let
                         newStack =
-                            cursor.stack |> push cursor.current
+                            cursor.stack |> Stack.push cursor.current
                     in
                     toPathHelp rest { cursor | stack = newStack }
 
                 ']' ->
-                    case pop cursor.stack of
+                    case Stackkpop cursor.stack of
                         Nothing ->
                             toPathHelp rest cursor
 
