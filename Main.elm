@@ -43,11 +43,15 @@ type alias Image =
     }
 
 
+type alias Rules =
+    Dict Char (List Char)
+
+
 type alias System =
-    { start : String
+    { start : List Char
     , angle : Int
     , iterations : Int
-    , rules : Dict String String
+    , rules : Rules
     }
 
 
@@ -81,50 +85,85 @@ init =
         ( Loading, loadCommand )
 
 
+toRules : List ( Char, String ) -> Rules
+toRules rules =
+    rules
+        |> List.map (\( char, str ) -> ( char, String.toList str ))
+        |> Dict.fromList
+
+
 systemOne : System
 systemOne =
-    { start = "NSH"
+    { start = String.toList "NSH"
     , angle = 90
     , iterations = 5
     , rules =
-        Dict.fromList
-            [ ( "F", "H-[F[-]]" )
-            , ( "D", "NNHF" )
-            , ( "N", "[]S-HFSHF" )
-            , ( "H", "[-[[N]DS-]]" )
-            , ( "S", "[N-+SHDN]" )
+        toRules
+            [ ( 'F', "H-[F[-]]" )
+            , ( 'D', "NNHF" )
+            , ( 'N', "[]S-HFSHF" )
+            , ( 'H', "[-[[N]DS-]]" )
+            , ( 'S', "[N-+SHDN]" )
             ]
     }
 
 
 systemTwo : System
 systemTwo =
-    { start = "S"
+    { start = String.toList "S"
     , angle = 60
-    , iterations = 5
+    , iterations = 6
     , rules =
-        Dict.fromList
-            [ ( "F", "JS" )
-            , ( "O", "F+F+FF" )
-            , ( "L", "JF++" )
-            , ( "V", "JL+-OSFF" )
-            , ( "J", "OF+" )
-            , ( "S", "[+S]LS+V" )
+        toRules
+            [ ( 'F', "JS" )
+            , ( 'O', "F+F+FF" )
+            , ( 'L', "JF++" )
+            , ( 'V', "JL+-OSFF" )
+            , ( 'J', "OF+" )
+            , ( 'S', "[+S]LS+V" )
             ]
     }
 
 
 systemThree : System
 systemThree =
-    { start = "ZZ"
+    { start = String.toList "ZZ"
     , angle = 45
     , iterations = 5
     , rules =
-        Dict.fromList
-            [ ( "F", "-ZFFFF-FF" )
-            , ( "Z", "PA" )
-            , ( "P", "+AZ" )
-            , ( "A", "F+[ZF]AZ" )
+        toRules
+            [ ( 'F', "-ZFFFF-FF" )
+            , ( 'Z', "PA" )
+            , ( 'P', "+AZ" )
+            , ( 'A', "F+[ZF]AZ" )
+            ]
+    }
+
+
+systemFour : System
+systemFour =
+    { start = String.toList "FFPF"
+    , angle = 60
+    , iterations = 2
+    , rules =
+        toRules
+            [ ( 'F', "PF++F[FF-F+PF+FPP][F]FFPF" )
+            , ( 'P', "" )
+            ]
+    }
+
+
+systemFive : System
+systemFive =
+    { start = String.toList "TOT"
+    , angle = 60
+    , iterations = 5
+    , rules =
+        toRules
+            [ ( 'F', "O+" )
+            , ( 'H', "F+F+" )
+            , ( 'O', "T[OFF]+FH" )
+            , ( 'T', "FF+HOTO" )
             ]
     }
 
@@ -144,7 +183,7 @@ update msg model =
                 image =
                     { colorscheme = toColorscheme color
                     , progress = 1
-                    , system = systemTwo
+                    , system = systemFive
                     , canvas = { width = 100 }
                     , editor = False
                     }
@@ -216,47 +255,45 @@ toColorscheme color =
         Colorscheme background foreground
 
 
-expand : System -> String
+expand : System -> List Char
 expand system =
     if system.iterations < 1 then
         system.start
     else
         let
-            newStart =
-                system.start
-                    |> String.split ""
-                    |> List.filterMap (\char -> Dict.get char system.rules)
-                    |> String.join ""
+            expansionFor char =
+                Dict.get char system.rules
+                    |> Maybe.withDefault []
         in
             expand
                 { system
-                    | start = newStart
+                    | start = List.concatMap expansionFor system.start
                     , iterations = system.iterations - 1
                 }
 
 
-toPath : Int -> String -> Svg.Path.Subpath
-toPath angle string =
+toPath : Int -> List Char -> Svg.Path.Subpath
+toPath angle items =
     Svg.Path.subpath
         (Svg.Path.startAt ( 0, 0 ))
         Svg.Path.open
-        (toPathHelp string { current = ( 0, 0 ), angle = angle, stack = [] })
+        (toPathHelp items { current = ( 0, 0 ), angle = angle, stack = [] })
 
 
 toPathHelp :
-    String
+    List Char
     ->
         { current : ( Float, Float )
         , angle : Int
         , stack : List ( ( Float, Float ), Int )
         }
     -> List Svg.Path.Instruction
-toPathHelp string cursor =
-    case String.uncons string of
-        Nothing ->
+toPathHelp items cursor =
+    case items of
+        [] ->
             []
 
-        Just ( first, rest ) ->
+        first :: rest ->
             case first of
                 'F' ->
                     let
@@ -271,10 +308,10 @@ toPathHelp string cursor =
                         Svg.Path.lineTo point :: (toPathHelp rest { cursor | current = point })
 
                 '+' ->
-                    toPathHelp rest { cursor | angle = cursor.angle + 45 }
+                    toPathHelp rest { cursor | angle = cursor.angle + 60 }
 
                 '-' ->
-                    toPathHelp rest { cursor | angle = cursor.angle - 45 }
+                    toPathHelp rest { cursor | angle = cursor.angle - 60 }
 
                 '[' ->
                     let
@@ -347,16 +384,26 @@ view model =
         Loading ->
             Html.text "loading..."
 
-        Page system ->
-            Html.div []
+        Page image ->
+            Html.div
+                [ Html.Attributes.style
+                    [ ( "height", "100%" )
+                    , ( "overflow"
+                      , if image.editor then
+                            "hidden"
+                        else
+                            "initial"
+                      )
+                    ]
+                ]
                 [ Html.div
                     [ Html.Attributes.style
                         [ ( "display", "flex" )
-                        , ( "height", "100vh" )
+                        , ( "height", "100%" )
                         ]
                     ]
-                    [ systemView system
-                    , controlsView system
+                    [ systemView image
+                    , controlsView image
                     , Html.node "style" [] [ Html.text stylesheet ]
                     ]
                 , prose
@@ -414,7 +461,7 @@ controlsView { system, editor } =
                 ]
              , Html.div
                 [ Html.Attributes.style [ ( "margin-bottom", "40px" ) ] ]
-                [ Html.text <| "start rule: " ++ system.start ]
+                [ Html.text <| "start rule: " ++ String.fromList system.start ]
              , Html.div [] [ Html.text "rules" ]
              , Html.div
                 [ Html.Attributes.style [ ( "margin-bottom", "40px" ) ] ]
@@ -427,7 +474,7 @@ controlsView { system, editor } =
                 [ Html.text "valid characters in the rules include [ (add a new level on the stack), ] (pop a level off the stack), + (turn clockwise by given angle), - (counterclockwise), or another rule. The rules above will get expanded into:" ]
              , Html.div
                 [ Html.Attributes.style [ ( "text-wrap", "break-word" ) ] ]
-                [ Html.text <| expand system ]
+                [ Html.text <| String.fromList <| expand system ]
              ]
             )
          else
@@ -467,47 +514,14 @@ buttonTo msg text =
         [ Html.text text ]
 
 
-rulesView : Dict String String -> List (Html msg)
+rulesView : Rules -> List (Html msg)
 rulesView rules =
     Dict.foldl ruleView [] rules
 
 
-ruleView : String -> String -> List (Html msg) -> List (Html msg)
+ruleView : Char -> List Char -> List (Html msg) -> List (Html msg)
 ruleView rule production html =
-    Html.div [] [ Html.text (rule ++ ": " ++ production) ] :: html
-
-
-lines : Color -> List Line
-lines color =
-    [ Line ( 0, 0 ) ( 0, 0 ) color
-    , Line ( 0, 0 ) ( 0.25, 0.25 ) color
-    , Line ( 0.25, 0.25 ) ( 0.75, 0.25 ) color
-    , Line ( 0.75, 0.25 ) ( 0.75, 0.75 ) color
-    , Line ( 0.75, 0.75 ) ( 0.25, 0.75 ) color
-    , Line ( 0.25, 0.75 ) ( 0.25, 0.25 ) color
-    , Line ( 0.25, 0.25 ) ( 0, 0 ) color
-    , Line ( 0, 0 ) ( 0, 1 ) color
-    , Line ( 0, 1 ) ( 1, 1 ) color
-    , Line ( 1, 1 ) ( 1, 0 ) color
-    , Line ( 1, 0 ) ( 0, 0 ) color
-    , Line ( 0, 0 ) ( 0, 0 ) color
-    ]
-
-
-points : List Point
-points =
-    [ ( 0, 0 )
-    , ( 0.25, 0.25 )
-    , ( 0.75, 0.25 )
-    , ( 0.75, 0.75 )
-    , ( 0.25, 0.75 )
-    , ( 0.25, 0.25 )
-    , ( 0, 0 )
-    , ( 0, 1 )
-    , ( 1, 1 )
-    , ( 1, 0 )
-    , ( 0, 0 )
-    ]
+    Html.div [] [ Html.text (String.cons rule ": " ++ String.fromList production) ] :: html
 
 
 systemView : Image -> Svg Msg
@@ -532,7 +546,7 @@ systemView { colorscheme, progress, system } =
 
 viewboxFromPath : Svg.Path.Subpath -> String
 viewboxFromPath _ =
-    "-200 -200 1800 500"
+    "-100 -300 400 500"
 
 
 toProgress : Json.Decode.Decoder Float
