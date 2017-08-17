@@ -2,10 +2,10 @@ module Main exposing (main)
 
 import Color exposing (Color)
 import Color.Convert exposing (colorToHex)
+import Controls
 import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes
-import Html.Events
 import Json.Decode
 import Random
 import Svg exposing (Svg)
@@ -441,20 +441,6 @@ type alias Line =
     }
 
 
-stylesheet : String
-stylesheet =
-    """
-.Button {
-    color: inherit;
-    background: initial;
-}
-
-.Button:hover {
-    color: white;
-}
-"""
-
-
 view : Model -> Html Msg
 view model =
     case model of
@@ -481,7 +467,6 @@ view model =
                     ]
                     [ systemView image
                     , controlsView image
-                    , Html.node "style" [] [ Html.text stylesheet ]
                     ]
                 , prose
                 ]
@@ -511,93 +496,35 @@ prose =
 
 controlsView : Image -> Html Msg
 controlsView { system, editor } =
-    Html.div
-        [ Html.Attributes.style
-            [ ( "background-color", colorToHex (Color.grayscale 0.9) )
-            , ( "color", colorToHex (Color.grayscale 0.3) )
-            , ( "padding", "40px" )
-            , ( "font-family", "SFMono-Regular, monospace" )
-            , ( "max-width", "500px" )
-            , ( "flex-shrink", "0" )
-            , ( "overflow", "auto" )
-            , ( "height", "100%" )
-            , ( "box-sizing", "border-box" )
-            ]
+    let
+        controlsConfig =
+            Controls.config
+                { onOpen = ShowEditor
+                , onDismiss = CloseEditor
+                , title = "l-system builder"
+                }
+
+        state =
+            { visible = editor }
+
+        -- What the production looks like after so many iterations
+        expandedText =
+            String.fromList <| expand system
+
+        rulesToString char production dict =
+            Dict.insert (toString char) (String.fromList production) dict
+
+        rulesDict =
+            Dict.foldl rulesToString Dict.empty system.rules
+    in
+    Controls.view controlsConfig
+        state
+        [ Controls.string "start rule" (String.fromList system.start)
+        , Controls.dict "rules" rulesDict
+        , Controls.int "angle (degrees)" system.angle
+        , Controls.text "valid characters in the rules include [ (add a new level on the stack), ] (pop a level off the stack), + (turn clockwise by given angle), - (counterclockwise), or another rule. The rules above will get expanded into:"
+        , Controls.text expandedText
         ]
-        (if editor then
-            [ Html.div
-                [ Html.Attributes.style
-                    [ ( "margin-bottom", "80px" )
-                    , ( "display", "flex" )
-                    , ( "align-items", "baseline" )
-                    ]
-                ]
-                [ Html.div
-                    [ Html.Attributes.style [ ( "flex", "1" ), ( "color", "white" ) ] ]
-                    [ Html.text "l-system builder" ]
-                , buttonTo CloseEditor "close"
-                ]
-            , Html.div
-                [ Html.Attributes.style [ ( "margin-bottom", "40px" ) ] ]
-                [ Html.text <| "start rule: " ++ String.fromList system.start ]
-            , Html.div [] [ Html.text "rules" ]
-            , Html.div
-                [ Html.Attributes.style [ ( "margin-bottom", "40px" ) ] ]
-                (rulesView system.rules)
-            , Html.div
-                [ Html.Attributes.style [ ( "margin-bottom", "40px" ) ] ]
-                [ Html.text <| "angle: " ++ (system.angle |> toString |> String.left 5) ++ " degrees" ]
-            , Html.div
-                [ Html.Attributes.style [ ( "text-wrap", "break-word" ), ( "margin-bottom", "40px" ) ] ]
-                [ Html.text "valid characters in the rules include [ (add a new level on the stack), ] (pop a level off the stack), + (turn clockwise by given angle), - (counterclockwise), or another rule. The rules above will get expanded into:" ]
-            , Html.div
-                [ Html.Attributes.style [ ( "text-wrap", "break-word" ) ] ]
-                [ Html.text <| String.fromList <| expand system ]
-            ]
-         else
-            [ Html.div
-                [ Html.Attributes.style
-                    [ ( "color", "white" )
-                    , ( "margin-bottom", "80px" )
-                    , ( "transform", "rotate(90deg)" )
-                    , ( "transform-origin", "center left" )
-                    , ( "width", "0" )
-                    , ( "line-height", "1" )
-                    , ( "white-space", "pre" )
-                    , ( "cursor", "pointer" )
-                    ]
-                , Html.Events.onClick ShowEditor
-                ]
-                [ Html.text "l-system builder" ]
-            ]
-        )
-
-
-buttonTo : msg -> String -> Html msg
-buttonTo msg text =
-    Html.button
-        [ Html.Attributes.class "Button"
-        , Html.Events.onClick msg
-        , Html.Attributes.style
-            [ ( "border-width", "0" )
-            , ( "font-family", "inherit" )
-            , ( "font-size", "inherit" )
-            , ( "padding", "20px 30px" )
-            , ( "outline", "none" )
-            , ( "cursor", "pointer" )
-            ]
-        ]
-        [ Html.text text ]
-
-
-rulesView : Rules -> List (Html msg)
-rulesView rules =
-    Dict.foldl ruleView [] rules
-
-
-ruleView : Char -> Production -> List (Html msg) -> List (Html msg)
-ruleView rule production html =
-    Html.div [] [ Html.text (String.cons rule ": " ++ String.fromList production) ] :: html
 
 
 systemView : Image -> Svg Msg
@@ -667,11 +594,6 @@ interpolatePoints progress points =
     points
         |> List.indexedMap (,)
         |> List.foldl permitPoint []
-
-
-interpolatePath : Float -> Svg.Path.Subpath -> Svg.Path.Subpath
-interpolatePath amount path =
-    path
 
 
 polygon : List Point -> Svg.Path.Subpath
