@@ -89,7 +89,7 @@ pickSystem percentage =
     else if percentage > 0.6 && percentage < 0.8 then
         systemFour
     else
-        systemFive
+        dragon
 
 
 systemOne : System
@@ -158,12 +158,25 @@ systemFive =
     parseAsSystem
         { start = "TOT"
         , angle = 60
-        , iterations = 2
+        , iterations = 5
         , rules =
             [ ( 'F', "O+" )
             , ( 'H', "F+F+" )
             , ( 'O', "T[OFF]+FH" )
             , ( 'T', "FF+HOTO" )
+            ]
+        }
+
+
+dragon : System
+dragon =
+    parseAsSystem
+        { start = "FX+FX+"
+        , angle = 90
+        , iterations = 10
+        , rules =
+            [ ( 'F', "X+YF" )
+            , ( 'X', "F+F+" )
             ]
         }
 

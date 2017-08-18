@@ -37,7 +37,7 @@ type Operation
     | RotateCounterClockwise
     | StackPush
     | StackPop
-    | Expand String
+    | Rule Char
 
 
 type alias Point =
@@ -72,6 +72,12 @@ type Position
     = Position Point Angle
 
 
+type alias State =
+    { current : Position
+    , stack : Stack Position
+    }
+
+
 start : Position
 start =
     Position ( 0, 0 ) 0
@@ -98,74 +104,102 @@ advance amount (Position ( x, y ) angle) =
     Position point angle
 
 
-toPath : Int -> Production -> Svg.Path.Subpath
-toPath angle items =
-    Svg.Path.subpath
-        (Svg.Path.startAt ( 0, 0 ))
-        Svg.Path.open
-        (toPathHelp items { current = start, stack = [] })
+type ExpandedProduction
+    = Operation
+    | List ExpandedProduction
 
 
-toPathHelp :
-    Production
-    ->
-        { current : Position
-        , stack : Stack Position
-        }
-    -> List Svg.Path.Instruction
-toPathHelp items cursor =
-    case items of
+toSubpath : List Point -> Svg.Path.Subpath
+toSubpath points =
+    case points of
         [] ->
-            []
+            Svg.Path.emptySubpath
 
-        first :: rest ->
-            case first of
-                'F' ->
-                    let
-                        nextPosition =
-                            cursor.current |> advance 20
+        head :: rest ->
+            Svg.Path.subpath (Svg.Path.startAt head)
+                Svg.Path.open
+                [ Svg.Path.lineToMany rest ]
 
-                        nextCursor =
-                            { cursor | current = nextPosition }
 
-                        (Position point _) =
-                            nextPosition
-                    in
-                    Svg.Path.lineTo point :: toPathHelp rest nextCursor
+toPath : Int -> Production -> Svg.Path.Path
+toPath angle chars =
+    let
+        toPathHelp : Production -> State -> List Point -> Svg.Path.Path -> Svg.Path.Path
+        toPathHelp chars cursor points path =
+            case chars of
+                [] ->
+                    toSubpath points :: path
 
-                '+' ->
-                    toPathHelp rest { cursor | current = clockwise 60 cursor.current }
-
-                '-' ->
-                    toPathHelp rest { cursor | current = counterClockwise 60 cursor.current }
-
-                '[' ->
-                    let
-                        newStack =
-                            cursor.stack |> Stack.push cursor.current
-                    in
-                    toPathHelp rest { cursor | stack = newStack }
-
-                ']' ->
-                    case Stack.pop cursor.stack of
-                        Nothing ->
-                            toPathHelp rest cursor
-
-                        Just ( position, restOfTheStack ) ->
+                first :: rest ->
+                    case first of
+                        'F' ->
                             let
+                                nextPosition =
+                                    cursor.current |> advance 20
+
                                 nextCursor =
-                                    { cursor
-                                        | stack = restOfTheStack
-                                        , current = position
-                                    }
+                                    { cursor | current = nextPosition }
 
                                 (Position point _) =
-                                    position
-                            in
-                            Svg.Path.lineTo point :: toPathHelp rest nextCursor
+                                    nextPosition
 
-                _ ->
-                    toPathHelp rest cursor
+                                newPoints =
+                                    point :: points
+                            in
+                            toPathHelp rest nextCursor newPoints path
+
+                        '+' ->
+                            let
+                                nextCursor =
+                                    { cursor | current = clockwise angle cursor.current }
+                            in
+                            toPathHelp rest nextCursor points path
+
+                        '-' ->
+                            let
+                                nextCursor =
+                                    { cursor | current = counterClockwise angle cursor.current }
+                            in
+                            toPathHelp rest nextCursor points path
+
+                        '[' ->
+                            let
+                                newStack =
+                                    cursor.stack |> Stack.push cursor.current
+
+                                nextCursor =
+                                    { cursor | stack = newStack }
+                            in
+                            toPathHelp rest nextCursor points path
+
+                        ']' ->
+                            case Stack.pop cursor.stack of
+                                Nothing ->
+                                    toPathHelp rest cursor points path
+
+                                Just ( position, restOfTheStack ) ->
+                                    let
+                                        nextCursor =
+                                            { cursor
+                                                | stack = restOfTheStack
+                                                , current = position
+                                            }
+
+                                        (Position point _) =
+                                            position
+
+                                        newPoints =
+                                            []
+
+                                        newPath =
+                                            toSubpath points :: path
+                                    in
+                                    toPathHelp rest nextCursor newPoints newPath
+
+                        _ ->
+                            toPathHelp rest cursor points path
+    in
+    toPathHelp chars (State start Stack.empty) [ ( 0, 0 ) ] []
 
 
 view : Colorscheme -> Float -> (Float -> msg) -> System -> Svg msg
@@ -175,7 +209,7 @@ view colorscheme progress msg system =
             "background-color:" ++ colorToHex colorscheme.background
 
         path =
-            expand system |> toPath system.angle |> List.singleton
+            expand system |> toPath system.angle
     in
     Svg.svg
         [ Attributes.style styles
