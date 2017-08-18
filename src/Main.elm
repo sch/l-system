@@ -5,6 +5,7 @@ import Color exposing (Color)
 import Colorscheme exposing (Colorscheme)
 import Controls
 import Dict exposing (Dict)
+import Example
 import Html exposing (Html)
 import Html.Lazy
 import Random
@@ -58,182 +59,6 @@ init =
     ( Loading, loadCommand )
 
 
-parseAsSystem :
-    { start : String
-    , angle : Int
-    , iterations : Int
-    , rules : List ( Char, String )
-    }
-    -> System
-parseAsSystem definition =
-    let
-        start =
-            String.toList definition.start
-
-        rules =
-            definition.rules
-                |> List.map (\( char, str ) -> ( char, String.toList str ))
-                |> Dict.fromList
-    in
-    { definition | rules = rules, start = start }
-
-
-{-| kind of dumb, but it's a nice way to swipe through all the examples I have
-while testing.
--}
-pickSystem : Float -> System
-pickSystem percentage =
-    if percentage < 0.2 then
-        systemOne
-    else if percentage > 0.2 && percentage < 0.4 then
-        systemTwo
-    else if percentage > 0.4 && percentage < 0.6 then
-        systemThree
-    else if percentage > 0.6 && percentage < 0.8 then
-        systemFour
-    else
-        systemFive
-
-
-systemOne : System
-systemOne =
-    parseAsSystem
-        { start = "NSH"
-        , angle = 90
-        , iterations = 6
-        , rules =
-            [ ( 'F', "H-[F[-]]" )
-            , ( 'D', "NNHF" )
-            , ( 'N', "[]S-HFSHF" )
-            , ( 'H', "[-[[N]DS-]]" )
-            , ( 'S', "[N-+SHDN]" )
-            ]
-        }
-
-
-systemTwo : System
-systemTwo =
-    parseAsSystem
-        { start = "S"
-        , angle = 60
-        , iterations = 7
-        , rules =
-            [ ( 'F', "JS" )
-            , ( 'O', "F+F+FF" )
-            , ( 'L', "JF++" )
-            , ( 'V', "JL+-OSFF" )
-            , ( 'J', "OF+" )
-            , ( 'S', "[+S]LS+V" )
-            ]
-        }
-
-
-systemThree : System
-systemThree =
-    parseAsSystem
-        { start = "ZZ"
-        , angle = 45
-        , iterations = 5
-        , rules =
-            [ ( 'F', "-ZFFFF-FF" )
-            , ( 'Z', "PA" )
-            , ( 'P', "+AZ" )
-            , ( 'A', "F+[ZF]AZ" )
-            ]
-        }
-
-
-systemFour : System
-systemFour =
-    parseAsSystem
-        { start = "TOT"
-        , angle = 60
-        , iterations = 5
-        , rules =
-            [ ( 'F', "O+" )
-            , ( 'H', "F+F+" )
-            , ( 'O', "T[OFF]+FH" )
-            , ( 'T', "FF+HOTO" )
-            ]
-        }
-
-
-systemFive : System
-systemFive =
-    systemTwo
-
-
-tweet898382707616501760 : System
-tweet898382707616501760 =
-    parseAsSystem
-        { start = "PFP"
-        , angle = 90
-        , iterations = 4
-        , rules =
-            [ ( 'F', "[C-F]" )
-            , ( 'Q', "[]A" )
-            , ( 'C', "+[A]P" )
-            , ( 'A', "-F-+MQFFP" )
-            , ( 'P', "AA" )
-            ]
-        }
-
-
-{-| <https://twitter.com/LSystemBot/status/897839129299374082>
--}
-tweet897839129299374082 : System
-tweet897839129299374082 =
-    parseAsSystem
-        { start = "PFF"
-        , angle = 253
-        , iterations = 7
-        , rules =
-            [ ( 'F', "[FD]-MP+PL" )
-            , ( 'L', "FF" )
-            , ( 'D', "F-F+FFL+" )
-            , ( 'M', "F[D+]L" )
-            ]
-        }
-
-
-dragon : System
-dragon =
-    parseAsSystem
-        { start = "FX"
-        , angle = 90
-        , iterations = 9
-        , rules =
-            [ ( 'X', "X+YF+" )
-            , ( 'Y', "-FX-Y" )
-            ]
-        }
-
-
-koch : System
-koch =
-    parseAsSystem
-        { start = "F"
-        , angle = 90
-        , iterations = 4
-        , rules =
-            [ ( 'F', "F+F-F-F+F" )
-            ]
-        }
-
-
-plant : System
-plant =
-    parseAsSystem
-        { start = "X"
-        , angle = 25
-        , iterations = 6
-        , rules =
-            [ ( 'X', "F[][X]F[]+FX" )
-            , ( 'F', "FF" )
-            ]
-        }
-
-
 
 -- Update
 
@@ -249,7 +74,7 @@ update msg model =
                 image =
                     { colorscheme = Colorscheme.complementary color
                     , progress = 1
-                    , system = systemFive
+                    , system = Example.tweet897597535254130690
                     , editor = False
                     }
             in
