@@ -169,7 +169,8 @@ text : String -> Html msg
 text text =
     Html.div
         [ Html.Attributes.style
-            [ ( "text-wrap", "break-word" )
+            [ ( "word-wrap", "break-word" )
+            , ( "overflow-wrap", "break-word" )
             , ( "margin-bottom", "40px" )
             ]
         ]

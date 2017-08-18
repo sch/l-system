@@ -1,4 +1,4 @@
-module System exposing (System, expand, view)
+module System exposing (Config, System, config, expand, view)
 
 import Color exposing (Color)
 import Color.Convert exposing (colorToHex)
@@ -9,6 +9,18 @@ import Stack exposing (Stack)
 import Svg exposing (Svg)
 import Svg.Attributes as Attributes
 import Svg.Path
+
+
+-- Config
+
+
+type Config msg
+    = Config { reportPosition : Float -> msg }
+
+
+config : { onSwipe : Float -> msg } -> Config msg
+config { onSwipe } =
+    Config { reportPosition = onSwipe }
 
 
 type alias Rules =
@@ -64,10 +76,8 @@ expand system =
     else
         let
             expansionFor char =
-                Debug.log ("expansion for char " ++ toString char)
-                    (Dict.get char system.rules
-                        |> Maybe.withDefault [ char ]
-                    )
+                Dict.get char system.rules
+                    |> Maybe.withDefault [ char ]
         in
         expand
             { system
@@ -102,12 +112,12 @@ counterClockwise degrees =
     clockwise (negate degrees)
 
 
-advance : Int -> Position -> Position
+advance : Float -> Position -> Position
 advance amount (Position ( x, y ) angle) =
     let
         point =
-            ( cos (degrees <| toFloat angle) * 20 + x
-            , sin (degrees <| toFloat angle) * 20 + y
+            ( cos (degrees <| toFloat angle) * amount + x
+            , sin (degrees <| toFloat angle) * amount + y
             )
     in
     Position point angle
@@ -140,8 +150,8 @@ toSubpath points =
                 [ Svg.Path.lineToMany rest ]
 
 
-toPath : Int -> Production -> ( Svg.Path.Path, Extent )
-toPath angle chars =
+toPath : Int -> Float -> Production -> ( Svg.Path.Path, Extent )
+toPath angle length chars =
     let
         startState =
             State start Stack.empty (Extent ( 0, 0 ) ( 0, 0 ))
@@ -157,7 +167,7 @@ toPath angle chars =
                         'F' ->
                             let
                                 nextPosition =
-                                    cursor.current |> advance 20
+                                    cursor.current |> advance length
 
                                 (Position point _) =
                                     nextPosition
@@ -231,14 +241,21 @@ toPath angle chars =
     toPathHelp chars startState [ ( 0, 0 ) ] []
 
 
-view : Colorscheme -> Float -> (Float -> msg) -> System -> Svg msg
-view colorscheme progress msg system =
+
+-- View
+
+
+view : Config msg -> Colorscheme -> System -> Svg msg
+view (Config { reportPosition }) colorscheme system =
     let
+        _ =
+            Debug.log "rendering system" True
+
         styles =
             "background-color:" ++ colorToHex colorscheme.background
 
         ( path, extent ) =
-            expand system |> toPath system.angle
+            expand system |> toPath system.angle 10
     in
     Svg.svg
         [ Attributes.style styles
@@ -246,7 +263,7 @@ view colorscheme progress msg system =
         , Attributes.height "100%"
         , Attributes.preserveAspectRatio "xMidYMid meet"
         , Attributes.viewBox <| viewboxString extent
-        , Dom.mouseHorizontal msg
+        , Dom.mouseHorizontal reportPosition
         ]
         [ pathView path colorscheme.foreground ]
 

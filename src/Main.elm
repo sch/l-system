@@ -6,6 +6,7 @@ import Colorscheme exposing (Colorscheme)
 import Controls
 import Dict exposing (Dict)
 import Html exposing (Html)
+import Html.Lazy
 import Random
 import System exposing (System)
 import Task
@@ -157,7 +158,40 @@ systemFour =
 
 systemFive : System
 systemFive =
-    dragon
+    tweet897839129299374082
+
+
+tweet898382707616501760 : System
+tweet898382707616501760 =
+    parseAsSystem
+        { start = "PFP"
+        , angle = 90
+        , iterations = 4
+        , rules =
+            [ ( 'F', "[C-F]" )
+            , ( 'Q', "[]A" )
+            , ( 'C', "+[A]P" )
+            , ( 'A', "-F-+MQFFP" )
+            , ( 'P', "AA" )
+            ]
+        }
+
+
+{-| <https://twitter.com/LSystemBot/status/897839129299374082>
+-}
+tweet897839129299374082 : System
+tweet897839129299374082 =
+    parseAsSystem
+        { start = "PFF"
+        , angle = 253
+        , iterations = 7
+        , rules =
+            [ ( 'F', "[FD]-MP+PL" )
+            , ( 'L', "FF" )
+            , ( 'D', "F-F+FFL+" )
+            , ( 'M', "F[D+]L" )
+            ]
+        }
 
 
 dragon : System
@@ -291,13 +325,18 @@ view model =
             Article.frame image.editor (mastheadView image) prose
 
 
+systemConfig : System.Config Msg
+systemConfig =
+    System.config { onSwipe = ChangeProgress }
+
+
 mastheadView : Image -> List (Html Msg)
 mastheadView image =
     let
         { colorscheme, progress, system } =
             image
     in
-    [ System.view colorscheme progress ChangeProgress system
+    [ Html.Lazy.lazy3 System.view systemConfig colorscheme system
     , controlsView image
     ]
 
@@ -315,24 +354,32 @@ controlsView { system, editor } =
         state =
             { visible = editor }
 
+        controlFor iterations =
+            Controls.string
+                (toString iterations)
+                (String.fromList (System.expand { system | iterations = iterations }))
+
         -- What the production looks like after so many iterations
-        expandedText =
-            String.fromList <| System.expand system
+        expansions =
+            List.range 0 system.iterations
+                |> List.map controlFor
 
         rulesToString char production dict =
             Dict.insert (toString char) (String.fromList production) dict
 
         rulesDict =
             Dict.foldl rulesToString Dict.empty system.rules
+
+        controls =
+            [ Controls.string "start rule" (String.fromList system.start)
+            , Controls.dict "rules" rulesDict
+            , Controls.int "angle (degrees)" system.angle
+            , Controls.int "number of iterations" system.iterations
+            , Controls.text "valid characters in the rules include [ (add a new level on the stack), ] (pop a level off the stack), + (turn clockwise by given angle), - (counterclockwise), or another rule. The rules above will get expanded into:"
+            ]
+                ++ expansions
     in
-    Controls.view controlsConfig
-        state
-        [ Controls.string "start rule" (String.fromList system.start)
-        , Controls.dict "rules" rulesDict
-        , Controls.int "angle (degrees)" system.angle
-        , Controls.text "valid characters in the rules include [ (add a new level on the stack), ] (pop a level off the stack), + (turn clockwise by given angle), - (counterclockwise), or another rule. The rules above will get expanded into:"
-        , Controls.text expandedText
-        ]
+    Controls.view controlsConfig state controls
 
 
 prose : String
