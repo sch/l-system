@@ -89,7 +89,7 @@ pickSystem percentage =
     else if percentage > 0.6 && percentage < 0.8 then
         systemFour
     else
-        dragon
+        systemFive
 
 
 systemOne : System
@@ -97,7 +97,7 @@ systemOne =
     parseAsSystem
         { start = "NSH"
         , angle = 90
-        , iterations = 5
+        , iterations = 6
         , rules =
             [ ( 'F', "H-[F[-]]" )
             , ( 'D', "NNHF" )
@@ -143,19 +143,6 @@ systemThree =
 systemFour : System
 systemFour =
     parseAsSystem
-        { start = "FFPF"
-        , angle = 60
-        , iterations = 3
-        , rules =
-            [ ( 'F', "PF++F[FF-F+PF+FPP][F]FFPF" )
-            , ( 'P', "" )
-            ]
-        }
-
-
-systemFive : System
-systemFive =
-    parseAsSystem
         { start = "TOT"
         , angle = 60
         , iterations = 5
@@ -168,15 +155,45 @@ systemFive =
         }
 
 
+systemFive : System
+systemFive =
+    dragon
+
+
 dragon : System
 dragon =
     parseAsSystem
-        { start = "FX+FX+"
+        { start = "FX"
         , angle = 90
-        , iterations = 10
+        , iterations = 9
         , rules =
-            [ ( 'F', "X+YF" )
-            , ( 'X', "F+F+" )
+            [ ( 'X', "X+YF+" )
+            , ( 'Y', "-FX-Y" )
+            ]
+        }
+
+
+koch : System
+koch =
+    parseAsSystem
+        { start = "F"
+        , angle = 90
+        , iterations = 4
+        , rules =
+            [ ( 'F', "F+F-F-F+F" )
+            ]
+        }
+
+
+plant : System
+plant =
+    parseAsSystem
+        { start = "X"
+        , angle = 25
+        , iterations = 6
+        , rules =
+            [ ( 'X', "F[][X]F[]+FX" )
+            , ( 'F', "FF" )
             ]
         }
 
@@ -209,8 +226,11 @@ update msg model =
 
                 Page image ->
                     let
+                        system =
+                            pickSystem progress
+
                         page =
-                            Page { image | progress = progress }
+                            Page { image | progress = progress, system = system }
                     in
                     ( page, Cmd.none )
 
@@ -274,10 +294,10 @@ view model =
 mastheadView : Image -> List (Html Msg)
 mastheadView image =
     let
-        { colorscheme, progress } =
+        { colorscheme, progress, system } =
             image
     in
-    [ System.view colorscheme progress ChangeProgress (pickSystem progress)
+    [ System.view colorscheme progress ChangeProgress system
     , controlsView image
     ]
 

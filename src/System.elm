@@ -64,8 +64,10 @@ expand system =
     else
         let
             expansionFor char =
-                Dict.get char system.rules
-                    |> Maybe.withDefault []
+                Debug.log ("expansion for char " ++ toString char)
+                    (Dict.get char system.rules
+                        |> Maybe.withDefault [ char ]
+                    )
         in
         expand
             { system
@@ -141,6 +143,9 @@ toSubpath points =
 toPath : Int -> Production -> ( Svg.Path.Path, Extent )
 toPath angle chars =
     let
+        startState =
+            State start Stack.empty (Extent ( 0, 0 ) ( 0, 0 ))
+
         toPathHelp : Production -> State -> List Point -> Svg.Path.Path -> ( Svg.Path.Path, Extent )
         toPathHelp chars cursor points path =
             case chars of
@@ -174,14 +179,14 @@ toPath angle chars =
                         '+' ->
                             let
                                 nextCursor =
-                                    { cursor | current = clockwise angle cursor.current }
+                                    { cursor | current = counterClockwise angle cursor.current }
                             in
                             toPathHelp rest nextCursor points path
 
                         '-' ->
                             let
                                 nextCursor =
-                                    { cursor | current = counterClockwise angle cursor.current }
+                                    { cursor | current = clockwise angle cursor.current }
                             in
                             toPathHelp rest nextCursor points path
 
@@ -223,7 +228,7 @@ toPath angle chars =
                         _ ->
                             toPathHelp rest cursor points path
     in
-    toPathHelp chars (State start Stack.empty (Extent ( 0, 0 ) ( 0, 0 ))) [ ( 0, 0 ) ] []
+    toPathHelp chars startState [ ( 0, 0 ) ] []
 
 
 view : Colorscheme -> Float -> (Float -> msg) -> System -> Svg msg
@@ -249,13 +254,28 @@ view colorscheme progress msg system =
 viewboxString : Extent -> String
 viewboxString { min, max } =
     let
+        padding =
+            1.2
+
         ( minX, minY ) =
             min
 
         ( maxX, maxY ) =
             max
+
+        x =
+            minX * padding
+
+        y =
+            minY * padding
+
+        width =
+            (maxX - x) * padding
+
+        height =
+            (maxY - y) * padding
     in
-    [ minX, minY, maxX, maxY ]
+    [ x, y, width, height ]
         |> List.map toString
         |> String.join " "
 
@@ -300,7 +320,7 @@ interpolatePoints progress points =
 pathView : Svg.Path.Path -> Color -> Svg a
 pathView path color =
     Svg.path
-        [ Attributes.d <| Svg.Path.pathToStringWithPrecision 2 path
+        [ Attributes.d <| Svg.Path.pathToString path
         , Attributes.fill "none"
         , Attributes.stroke <| colorToHex color
         , Attributes.strokeLinecap "round"
