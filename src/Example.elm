@@ -135,6 +135,38 @@ tweet897597535254130690 =
         }
 
 
+{-| <https://twitter.com/LSystemBot/status/897416367514689536>
+-}
+tweet897416367514689536 : System
+tweet897416367514689536 =
+    parseAsSystem
+        { start = "FQ"
+        , angle = 45
+        , iterations = 7
+        , rules =
+            [ ( 'F', "[+]F-FFFF" )
+            , ( 'Q', "[-[+]QFF]F+" )
+            ]
+        }
+
+
+{-| <https://twitter.com/LSystemBot/status/896797261471989760>
+-}
+tweet896797261471989760 : System
+tweet896797261471989760 =
+    parseAsSystem
+        { start = "WEW"
+        , angle = 243
+        , iterations = 6
+        , rules =
+            [ ( 'F', "F[+]E-F" )
+            , ( 'W', "FWFN--FN" )
+            , ( 'E', "F" )
+            , ( 'N', "F" )
+            ]
+        }
+
+
 dragon : System
 dragon =
     parseAsSystem

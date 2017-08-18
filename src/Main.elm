@@ -13,6 +13,11 @@ import System exposing (System)
 import Task
 
 
+example : System
+example =
+    Example.tweet896797261471989760
+
+
 main : Program Never Model Msg
 main =
     Html.program
@@ -74,7 +79,7 @@ update msg model =
                 image =
                     { colorscheme = Colorscheme.complementary color
                     , progress = 1
-                    , system = Example.tweet897597535254130690
+                    , system = example
                     , editor = False
                     }
             in
