@@ -80,7 +80,7 @@ update msg model =
                     { colorscheme = Colorscheme.complementary color
                     , progress = 1
                     , system = example
-                    , editor = False
+                    , editor = True
                     }
             in
             ( Page image, Cmd.none )

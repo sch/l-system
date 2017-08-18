@@ -61,6 +61,17 @@ stylesheet =
 .Button:hover {
     color: white;
 }
+
+.Input {
+    background-color: inherit;
+    border: solid 1px inherit;
+    transition: border-color 0.1s ease-in-out, background-color 0.1s ease-in-out;
+}
+
+.Input:focus {
+    border-color: white;
+    background-color: rgba(255, 255, 255, 0.1);
+}
 """
 
 
@@ -138,8 +149,17 @@ sidewaysTitle title =
 label : String -> Html msg -> Html msg
 label text element =
     Html.div
-        [ Html.Attributes.style [ ( "margin-bottom", "40px" ) ] ]
-        [ Html.text (text ++ ": "), element ]
+        [ Html.Attributes.style
+            [ ( "margin-bottom", "40px" )
+            , ( "display", "flex" )
+            , ( "align-items", "baseline" )
+            ]
+        ]
+        [ Html.div
+            [ Html.Attributes.style [ ( "white-space", "pre" ) ] ]
+            [ Html.text (text ++ ": ") ]
+        , element
+        ]
 
 
 string : String -> String -> Html msg
@@ -154,7 +174,18 @@ int labelText value handleChange =
             Html.input
                 [ Html.Attributes.value (toString value)
                 , Html.Attributes.type_ "number"
+                , Html.Attributes.class "Input"
                 , Html.Events.onInput handleChange
+                , Html.Attributes.style
+                    [ ( "color", "inherit" )
+                    , ( "font-family", "inherit" )
+                    , ( "font-size", "inherit" )
+                    , ( "padding", "0.4em 0.8em" )
+                    , ( "border-radius", "0.4em" )
+                    , ( "flex", "1" )
+                    , ( "width", "100%" )
+                    , ( "outline", "none" )
+                    ]
                 ]
                 []
     in
