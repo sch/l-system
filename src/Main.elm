@@ -116,7 +116,7 @@ systemTwo =
     parseAsSystem
         { start = "S"
         , angle = 60
-        , iterations = 6
+        , iterations = 7
         , rules =
             [ ( 'F', "JS" )
             , ( 'O', "F+F+FF" )
@@ -160,7 +160,7 @@ systemFour =
 
 systemFive : System
 systemFive =
-    tweet897839129299374082
+    systemTwo
 
 
 tweet898382707616501760 : System
@@ -262,11 +262,8 @@ update msg model =
 
                 Page image ->
                     let
-                        system =
-                            pickSystem progress
-
                         page =
-                            Page { image | progress = progress, system = system }
+                            Page { image | progress = progress }
                     in
                     ( page, Cmd.none )
 
@@ -379,10 +376,13 @@ systemConfig =
 mastheadView : Image -> List (Html Msg)
 mastheadView image =
     let
-        { colorscheme, progress, system } =
-            image
+        state =
+            { colorscheme = image.colorscheme
+            , system = image.system
+            , progress = image.progress
+            }
     in
-    [ Html.Lazy.lazy3 System.view systemConfig colorscheme system
+    [ Html.Lazy.lazy2 System.view systemConfig state
     , controlsView image
     ]
 

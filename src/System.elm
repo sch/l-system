@@ -94,6 +94,7 @@ type alias State =
     { current : Position
     , stack : Stack Position
     , size : Extent
+    , points : List Point
     }
 
 
@@ -154,13 +155,17 @@ toPath : Int -> Float -> Production -> ( Svg.Path.Path, Extent )
 toPath angle length chars =
     let
         startState =
-            State start Stack.empty (Extent ( 0, 0 ) ( 0, 0 ))
+            { current = start
+            , stack = Stack.empty
+            , size = Extent ( 0, 0 ) ( 0, 0 )
+            , points = [ ( 0, 0 ) ]
+            }
 
-        toPathHelp : Production -> State -> List Point -> Svg.Path.Path -> ( Svg.Path.Path, Extent )
-        toPathHelp chars cursor points path =
+        toPathHelp : Production -> State -> Svg.Path.Path -> ( Svg.Path.Path, Extent )
+        toPathHelp chars cursor path =
             case chars of
                 [] ->
-                    ( toSubpath points :: path, cursor.size )
+                    ( toSubpath cursor.points :: path, cursor.size )
 
                 first :: rest ->
                     case first of
@@ -172,33 +177,28 @@ toPath angle length chars =
                                 (Position point _) =
                                     nextPosition
 
-                                nextSize =
-                                    grow point cursor.size
-
                                 nextCursor =
                                     { cursor
                                         | current = nextPosition
-                                        , size = nextSize
+                                        , size = grow point cursor.size
+                                        , points = point :: cursor.points
                                     }
-
-                                newPoints =
-                                    point :: points
                             in
-                            toPathHelp rest nextCursor newPoints path
+                            toPathHelp rest nextCursor path
 
                         '+' ->
                             let
                                 nextCursor =
                                     { cursor | current = counterClockwise angle cursor.current }
                             in
-                            toPathHelp rest nextCursor points path
+                            toPathHelp rest nextCursor path
 
                         '-' ->
                             let
                                 nextCursor =
                                     { cursor | current = clockwise angle cursor.current }
                             in
-                            toPathHelp rest nextCursor points path
+                            toPathHelp rest nextCursor path
 
                         '[' ->
                             let
@@ -208,54 +208,62 @@ toPath angle length chars =
                                 nextCursor =
                                     { cursor | stack = newStack }
                             in
-                            toPathHelp rest nextCursor points path
+                            toPathHelp rest nextCursor path
 
                         ']' ->
                             case Stack.pop cursor.stack of
                                 Nothing ->
-                                    toPathHelp rest cursor points path
+                                    toPathHelp rest cursor path
 
                                 Just ( position, restOfTheStack ) ->
                                     let
                                         (Position point _) =
                                             position
 
+                                        newPath =
+                                            toSubpath cursor.points :: path
+
                                         nextCursor =
                                             { cursor
                                                 | stack = restOfTheStack
                                                 , current = position
                                                 , size = grow point cursor.size
+                                                , points = [ point ]
                                             }
-
-                                        newPoints =
-                                            [ point ]
-
-                                        newPath =
-                                            toSubpath points :: path
                                     in
-                                    toPathHelp rest nextCursor newPoints newPath
+                                    toPathHelp rest nextCursor newPath
 
                         _ ->
-                            toPathHelp rest cursor points path
+                            toPathHelp rest cursor path
     in
-    toPathHelp chars startState [ ( 0, 0 ) ] []
+    toPathHelp chars startState []
 
 
 
 -- View
 
 
-view : Config msg -> Colorscheme -> System -> Svg msg
-view (Config { reportPosition }) colorscheme system =
-    let
-        _ =
-            Debug.log "rendering system" True
+type alias Model =
+    { colorscheme : Colorscheme
+    , system : System
+    , progress : Float
+    }
 
+
+view : Config msg -> Model -> Svg msg
+view (Config { reportPosition }) { colorscheme, progress, system } =
+    let
         styles =
             "background-color:" ++ colorToHex colorscheme.background
 
+        chars =
+            expand system
+
+        charsForProgress =
+            List.take (toFloat (List.length chars) * progress |> floor) chars
+
         ( path, extent ) =
-            expand system |> toPath system.angle 10
+            toPath system.angle 20 charsForProgress
     in
     Svg.svg
         [ Attributes.style styles
@@ -271,8 +279,8 @@ view (Config { reportPosition }) colorscheme system =
 viewboxString : Extent -> String
 viewboxString { min, max } =
     let
-        padding =
-            1.2
+        paddingFactor =
+            0.2
 
         ( minX, minY ) =
             min
@@ -280,19 +288,23 @@ viewboxString { min, max } =
         ( maxX, maxY ) =
             max
 
-        x =
-            minX * padding
-
-        y =
-            minY * padding
-
         width =
-            (maxX - x) * padding
+            maxX - minX
 
         height =
-            (maxY - y) * padding
+            maxY - minY
+
+        paddingX =
+            (width * paddingFactor) / 2
+
+        paddingY =
+            (height * paddingFactor) / 2
     in
-    [ x, y, width, height ]
+    [ minX - paddingX
+    , minY - paddingY
+    , width + (paddingX * 2)
+    , height + (paddingY * 2)
+    ]
         |> List.map toString
         |> String.join " "
 
