@@ -145,7 +145,7 @@ systemFour =
     parseAsSystem
         { start = "FFPF"
         , angle = 60
-        , iterations = 2
+        , iterations = 3
         , rules =
             [ ( 'F', "PF++F[FF-F+PF+FPP][F]FFPF" )
             , ( 'P', "" )

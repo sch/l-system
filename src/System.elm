@@ -44,6 +44,12 @@ type alias Point =
     ( Float, Float )
 
 
+type alias Extent =
+    { min : Point
+    , max : Point
+    }
+
+
 type alias Line =
     { start : Point
     , end : Point
@@ -75,6 +81,7 @@ type Position
 type alias State =
     { current : Position
     , stack : Stack Position
+    , size : Extent
     }
 
 
@@ -104,9 +111,19 @@ advance amount (Position ( x, y ) angle) =
     Position point angle
 
 
-type ExpandedProduction
-    = Operation
-    | List ExpandedProduction
+grow : Point -> Extent -> Extent
+grow point extent =
+    Extent (pointMin extent.min point) (pointMax extent.max point)
+
+
+pointMin : Point -> Point -> Point
+pointMin ( x1, y1 ) ( x2, y2 ) =
+    ( min x1 x2, min y1 y2 )
+
+
+pointMax : Point -> Point -> Point
+pointMax ( x1, y1 ) ( x2, y2 ) =
+    ( max x1 x2, max y1 y2 )
 
 
 toSubpath : List Point -> Svg.Path.Subpath
@@ -121,14 +138,14 @@ toSubpath points =
                 [ Svg.Path.lineToMany rest ]
 
 
-toPath : Int -> Production -> Svg.Path.Path
+toPath : Int -> Production -> ( Svg.Path.Path, Extent )
 toPath angle chars =
     let
-        toPathHelp : Production -> State -> List Point -> Svg.Path.Path -> Svg.Path.Path
+        toPathHelp : Production -> State -> List Point -> Svg.Path.Path -> ( Svg.Path.Path, Extent )
         toPathHelp chars cursor points path =
             case chars of
                 [] ->
-                    toSubpath points :: path
+                    ( toSubpath points :: path, cursor.size )
 
                 first :: rest ->
                     case first of
@@ -137,11 +154,17 @@ toPath angle chars =
                                 nextPosition =
                                     cursor.current |> advance 20
 
-                                nextCursor =
-                                    { cursor | current = nextPosition }
-
                                 (Position point _) =
                                     nextPosition
+
+                                nextSize =
+                                    grow point cursor.size
+
+                                nextCursor =
+                                    { cursor
+                                        | current = nextPosition
+                                        , size = nextSize
+                                    }
 
                                 newPoints =
                                     point :: points
@@ -179,17 +202,18 @@ toPath angle chars =
 
                                 Just ( position, restOfTheStack ) ->
                                     let
+                                        (Position point _) =
+                                            position
+
                                         nextCursor =
                                             { cursor
                                                 | stack = restOfTheStack
                                                 , current = position
+                                                , size = grow point cursor.size
                                             }
 
-                                        (Position point _) =
-                                            position
-
                                         newPoints =
-                                            []
+                                            [ point ]
 
                                         newPath =
                                             toSubpath points :: path
@@ -199,7 +223,7 @@ toPath angle chars =
                         _ ->
                             toPathHelp rest cursor points path
     in
-    toPathHelp chars (State start Stack.empty) [ ( 0, 0 ) ] []
+    toPathHelp chars (State start Stack.empty (Extent ( 0, 0 ) ( 0, 0 ))) [ ( 0, 0 ) ] []
 
 
 view : Colorscheme -> Float -> (Float -> msg) -> System -> Svg msg
@@ -208,7 +232,7 @@ view colorscheme progress msg system =
         styles =
             "background-color:" ++ colorToHex colorscheme.background
 
-        path =
+        ( path, extent ) =
             expand system |> toPath system.angle
     in
     Svg.svg
@@ -216,15 +240,24 @@ view colorscheme progress msg system =
         , Attributes.width "100%"
         , Attributes.height "100%"
         , Attributes.preserveAspectRatio "xMidYMid meet"
-        , Attributes.viewBox <| viewboxFromPath path
+        , Attributes.viewBox <| viewboxString extent
         , Dom.mouseHorizontal msg
         ]
         [ pathView path colorscheme.foreground ]
 
 
-viewboxFromPath : Svg.Path.Path -> String
-viewboxFromPath _ =
-    "-100 -300 400 500"
+viewboxString : Extent -> String
+viewboxString { min, max } =
+    let
+        ( minX, minY ) =
+            min
+
+        ( maxX, maxY ) =
+            max
+    in
+    [ minX, minY, maxX, maxY ]
+        |> List.map toString
+        |> String.join " "
 
 
 clamp : comparable -> comparable -> comparable -> comparable
@@ -262,19 +295,6 @@ interpolatePoints progress points =
     points
         |> List.indexedMap (,)
         |> List.foldl permitPoint []
-
-
-polygon : List Point -> Svg.Path.Subpath
-polygon points =
-    case points of
-        [] ->
-            Svg.Path.emptySubpath
-
-        first :: rest ->
-            Svg.Path.subpath
-                (Svg.Path.startAt first)
-                Svg.Path.open
-                [ Svg.Path.lineToMany rest ]
 
 
 pathView : Svg.Path.Path -> Color -> Svg a
