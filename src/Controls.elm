@@ -147,9 +147,18 @@ string labelText value =
     label labelText (Html.text value)
 
 
-int : String -> int -> Html msg
-int labelText value =
-    label labelText <| Html.text (toString value)
+int : String -> int -> (String -> msg) -> Html msg
+int labelText value handleChange =
+    let
+        input =
+            Html.input
+                [ Html.Attributes.value (toString value)
+                , Html.Attributes.type_ "number"
+                , Html.Events.onInput handleChange
+                ]
+                []
+    in
+    label labelText input
 
 
 dict : String -> Dict String String -> Html msg

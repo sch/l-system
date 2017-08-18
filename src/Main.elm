@@ -45,6 +45,8 @@ type Msg
     | ShowEditor
     | CloseEditor
     | ChangeProgress Float
+    | ChangeAngle String
+    | ChangeIterations String
 
 
 init : ( Model, Cmd Msg )
@@ -268,6 +270,50 @@ update msg model =
                     in
                     ( page, Cmd.none )
 
+        ChangeIterations string ->
+            case model of
+                Loading ->
+                    ( model, Cmd.none )
+
+                Page image ->
+                    let
+                        iterations =
+                            String.toInt string
+                                |> Result.withDefault image.system.iterations
+
+                        { system } =
+                            image
+
+                        newSystem =
+                            { system | iterations = iterations }
+
+                        page =
+                            Page { image | system = newSystem }
+                    in
+                    ( page, Cmd.none )
+
+        ChangeAngle string ->
+            case model of
+                Loading ->
+                    ( model, Cmd.none )
+
+                Page image ->
+                    let
+                        angle =
+                            String.toInt string
+                                |> Result.withDefault image.system.angle
+
+                        { system } =
+                            image
+
+                        newSystem =
+                            { system | angle = angle }
+
+                        page =
+                            Page { image | system = newSystem }
+                    in
+                    ( page, Cmd.none )
+
         ShowEditor ->
             case model of
                 Loading ->
@@ -373,8 +419,8 @@ controlsView { system, editor } =
         controls =
             [ Controls.string "start rule" (String.fromList system.start)
             , Controls.dict "rules" rulesDict
-            , Controls.int "angle (degrees)" system.angle
-            , Controls.int "number of iterations" system.iterations
+            , Controls.int "angle (degrees)" system.angle ChangeAngle
+            , Controls.int "number of iterations" system.iterations ChangeIterations
             , Controls.text "valid characters in the rules include [ (add a new level on the stack), ] (pop a level off the stack), + (turn clockwise by given angle), - (counterclockwise), or another rule. The rules above will get expanded into:"
             ]
                 ++ expansions
