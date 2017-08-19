@@ -4,10 +4,11 @@ import Color exposing (Color)
 import Color.Convert exposing (colorToHex)
 import Colorscheme exposing (Colorscheme)
 import Dict exposing (Dict)
-import Dom
+import Pointer
 import Stack exposing (Stack)
 import Svg exposing (Svg)
 import Svg.Attributes as Attributes
+import Svg.Events
 import Svg.Path
 
 
@@ -15,10 +16,10 @@ import Svg.Path
 
 
 type Config msg
-    = Config { reportPosition : Float -> msg }
+    = Config { reportPosition : Pointer.Percentage -> msg }
 
 
-config : { onSwipe : Float -> msg } -> Config msg
+config : { onSwipe : Pointer.Percentage -> msg } -> Config msg
 config { onSwipe } =
     Config { reportPosition = onSwipe }
 
@@ -271,7 +272,7 @@ view (Config { reportPosition }) { colorscheme, progress, system } =
         , Attributes.height "100%"
         , Attributes.preserveAspectRatio "xMidYMid meet"
         , Attributes.viewBox <| viewboxString extent
-        , Dom.mouseHorizontal reportPosition
+        , Svg.Events.on "mousemove" <| Pointer.horizontal reportPosition
         ]
         [ pathView path colorscheme.foreground ]
 
