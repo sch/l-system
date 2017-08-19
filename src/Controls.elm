@@ -84,7 +84,7 @@ stylesheet =
     border-right-color: inherit;
     padding: 0.4em 0.8em;
     color: inherit;
-    transition-duration: 0.15s;
+    transition-duration: 0.2s;
     transition-properties: border-color, color;
     background-color 0.1s ease-in-out;
 }
@@ -229,6 +229,8 @@ int text value handleChange =
                 , Html.Attributes.type_ "number"
                 , Html.Attributes.class "Input"
                 , Html.Attributes.size 5
+                , Html.Attributes.min "0"
+                , Html.Attributes.pattern "[0-9]*"
                 , Html.Events.onInput handleChange
                 , Html.Attributes.style
                     [ ( "font-family", "inherit" )
