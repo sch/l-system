@@ -110,7 +110,7 @@ view config state controls =
         styles =
             [ ( "background-color", colorToHex (Color.grayscale 0.9) )
             , ( "color", colorToHex (Color.grayscale 0.3) )
-            , ( "font-family", "SFMono-Regular, monospace" )
+            , ( "font-family", "SFMono-Regular, 'Inconsolata', monospace" )
             , ( "flex-shrink", "0" )
             , ( "overflow", "auto" )
             , ( "height", "100%" )
