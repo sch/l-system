@@ -15,7 +15,7 @@ import Task
 
 example : System
 example =
-    Example.tweet896797261471989760
+    Example.tweet897597535254130690
 
 
 main : Program Never Model Msg
@@ -48,6 +48,10 @@ type alias Image =
 type Preset
     = Koch
     | Dragon
+    | Plant
+    | Triangles
+    | Mesh
+    | Flower
 
 
 type Msg
@@ -117,6 +121,18 @@ update msg model =
 
                                 Dragon ->
                                     Example.dragon
+
+                                Plant ->
+                                    Example.plant
+
+                                Triangles ->
+                                    Example.tweet896797261471989760
+
+                                Mesh ->
+                                    Example.tweet897839129299374082
+
+                                Flower ->
+                                    Example.tweet897597535254130690
                     in
                     ( Page { image | system = system }, Cmd.none )
 
@@ -273,7 +289,13 @@ controlsView image =
             Dict.foldl rulesToString Dict.empty system.rules
 
         presets =
-            [ ( "Koch Curve", Koch ), ( "Dragon Curve", Dragon ) ]
+            [ ( "Koch Curve", Koch )
+            , ( "Dragon Curve", Dragon )
+            , ( "Plant", Plant )
+            , ( "Triangles", Triangles )
+            , ( "Mesh", Mesh )
+            , ( "Flower", Flower )
+            ]
 
         controls =
             [ Controls.union "preset" presets SelectPreset
