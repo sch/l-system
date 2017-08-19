@@ -1,4 +1,4 @@
-module Controls exposing (Config, config, dict, int, string, text, view)
+module Controls exposing (Config, State, config, dict, hide, int, show, state, string, text, union, view)
 
 import Color
 import Color.Convert exposing (colorToHex)
@@ -46,8 +46,22 @@ state =
     { visible = False }
 
 
+show : State -> State
+show state =
+    { state | visible = True }
+
+
+hide : State -> State
+hide state =
+    { state | visible = False }
+
+
 
 -- View
+
+
+type alias Label =
+    String
 
 
 stylesheet : String
@@ -64,19 +78,31 @@ stylesheet =
 
 .Input {
     background-color: inherit;
-    border: solid 1px inherit;
-    transition: border-color 0.1s ease-in-out, background-color 0.1s ease-in-out;
+    border-style: solid;
+    border-width: 2px;
+    border-bottom-color: inherit;
+    border-right-color: inherit;
+    padding: 0.4em 0.8em;
+    color: inherit;
+    transition-duration: 0.15s;
+    transition-properties: border-color, color;
+    background-color 0.1s ease-in-out;
 }
 
 .Input:focus {
     border-color: white;
-    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+fieldset {
+    border: none;
+    padding: 0;
 }
 """
 
 
 view : Config msg -> State -> List (Html msg) -> Html msg
-view config state body =
+view config state controls =
     let
         (Config { openControls, hideControls, title }) =
             config
@@ -84,9 +110,7 @@ view config state body =
         styles =
             [ ( "background-color", colorToHex (Color.grayscale 0.9) )
             , ( "color", colorToHex (Color.grayscale 0.3) )
-            , ( "padding", "40px" )
             , ( "font-family", "SFMono-Regular, monospace" )
-            , ( "max-width", "500px" )
             , ( "flex-shrink", "0" )
             , ( "overflow", "auto" )
             , ( "height", "100%" )
@@ -105,21 +129,29 @@ view config state body =
                 , Html.Events.onClick openControls
                 ]
 
-        body_ =
+        body =
             if state.visible then
-                [ styleTag, heading hideControls title ] ++ body
+                [ styleTag, heading hideControls title ]
+                    ++ [ Html.div
+                            [ Html.Attributes.style
+                                [ ( "display", "table" )
+                                , ( "padding", "0 40px" )
+                                ]
+                            ]
+                            controls
+                       ]
             else
                 [ styleTag, sidewaysTitle title ]
     in
-    Html.div attributes body_
+    Html.div attributes body
 
 
 heading : msg -> String -> Html msg
 heading closeMessage title =
     Html.div
         [ Html.Attributes.style
-            [ ( "margin-bottom", "80px" )
-            , ( "display", "flex" )
+            [ ( "display", "flex" )
+            , ( "padding", "0 0 40px 40px" )
             , ( "align-items", "baseline" )
             ]
         ]
@@ -138,6 +170,7 @@ sidewaysTitle title =
             , ( "margin-bottom", "80px" )
             , ( "transform", "rotate(90deg)" )
             , ( "transform-origin", "center left" )
+            , ( "margin", "40px" )
             , ( "width", "0" )
             , ( "line-height", "1" )
             , ( "white-space", "pre" )
@@ -146,57 +179,98 @@ sidewaysTitle title =
         [ Html.text title ]
 
 
-label : String -> Html msg -> Html msg
+label : Label -> Html msg -> Html msg
 label text element =
+    let
+        leftHand =
+            Html.div
+                [ Html.Attributes.style
+                    [ ( "white-space", "pre" )
+                    , ( "display", "table-cell" )
+                    , ( "text-align", "right" )
+                    ]
+                ]
+                [ Html.text text ]
+
+        rightHand =
+            Html.div
+                [ Html.Attributes.style
+                    [ ( "padding-bottom", "40px" )
+                    , ( "padding-left", "20px" )
+                    , ( "display", "table-cell" )
+                    , ( "white-space", "pre" )
+                    ]
+                ]
+                [ element ]
+    in
     Html.div
-        [ Html.Attributes.style
-            [ ( "margin-bottom", "40px" )
-            , ( "display", "flex" )
-            , ( "align-items", "baseline" )
-            ]
-        ]
+        [ Html.Attributes.style [ ( "display", "table-row-group" ) ] ]
         [ Html.div
-            [ Html.Attributes.style [ ( "white-space", "pre" ) ] ]
-            [ Html.text (text ++ ": ") ]
-        , element
+            [ Html.Attributes.style
+                [ ( "display", "table-row" )
+                , ( "vertical-align", "center" )
+                ]
+            ]
+            [ leftHand, rightHand ]
         ]
 
 
-string : String -> String -> Html msg
-string labelText value =
-    label labelText (Html.text value)
+string : Label -> String -> Html msg
+string text value =
+    label text (Html.text value)
 
 
-int : String -> int -> (String -> msg) -> Html msg
-int labelText value handleChange =
+int : Label -> int -> (String -> msg) -> Html msg
+int text value handleChange =
     let
         input =
             Html.input
                 [ Html.Attributes.value (toString value)
                 , Html.Attributes.type_ "number"
                 , Html.Attributes.class "Input"
+                , Html.Attributes.size 5
                 , Html.Events.onInput handleChange
                 , Html.Attributes.style
-                    [ ( "color", "inherit" )
-                    , ( "font-family", "inherit" )
+                    [ ( "font-family", "inherit" )
                     , ( "font-size", "inherit" )
-                    , ( "padding", "0.4em 0.8em" )
                     , ( "border-radius", "0.4em" )
-                    , ( "flex", "1" )
-                    , ( "width", "100%" )
                     , ( "outline", "none" )
+                    , ( "width", "3em" )
                     ]
                 ]
                 []
     in
-    label labelText input
+    label text input
+
+
+union : Label -> List ( String, choice ) -> (choice -> msg) -> Html msg
+union text choices handleSelect =
+    label text <| Html.fieldset [] <| List.map (radioButton handleSelect) choices
+
+
+radioButton : (option -> msg) -> ( String, option ) -> Html msg
+radioButton handleSelect ( label, option ) =
+    Html.label
+        [ Html.Attributes.style
+            [ ( "display", "block" )
+            , ( "padding-bottom", "20px" )
+            , ( "cursor", "pointer" )
+            ]
+        ]
+        [ Html.input
+            [ Html.Attributes.type_ "radio"
+            , Html.Events.onClick (handleSelect option)
+            ]
+            []
+        , Html.text label
+        ]
 
 
 dict : String -> Dict String String -> Html msg
 dict labelText dict =
     label labelText <|
         Html.div
-            [ Html.Attributes.style [ ( "padding-left", "20px" ) ] ]
+            []
             (Dict.foldl keyValueView [] dict)
 
 
@@ -211,7 +285,9 @@ text text =
         [ Html.Attributes.style
             [ ( "word-wrap", "break-word" )
             , ( "overflow-wrap", "break-word" )
-            , ( "margin-bottom", "40px" )
+            , ( "display", "table-caption" )
+            , ( "caption-side", "bottom" )
+            , ( "padding", "40px" )
             ]
         ]
         [ Html.text text ]
@@ -226,7 +302,7 @@ buttonTo msg text =
             [ ( "border-width", "0" )
             , ( "font-family", "inherit" )
             , ( "font-size", "inherit" )
-            , ( "padding", "20px 30px" )
+            , ( "padding", "40px 40px" )
             , ( "outline", "none" )
             , ( "cursor", "pointer" )
             ]

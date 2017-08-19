@@ -41,8 +41,13 @@ type alias Image =
     { colorscheme : Colorscheme
     , progress : Float
     , system : System
-    , editor : Bool
+    , controls : Controls.State
     }
+
+
+type Preset
+    = Koch
+    | Dragon
 
 
 type Msg
@@ -53,6 +58,7 @@ type Msg
     | ChangeProgress Float
     | ChangeAngle String
     | ChangeIterations String
+    | SelectPreset Preset
 
 
 init : ( Model, Cmd Msg )
@@ -80,7 +86,7 @@ update msg model =
                     { colorscheme = Colorscheme.complementary color
                     , progress = 1
                     , system = example
-                    , editor = True
+                    , controls = Controls.state
                     }
             in
             ( Page image, Cmd.none )
@@ -96,6 +102,23 @@ update msg model =
                             Page { image | progress = progress }
                     in
                     ( page, Cmd.none )
+
+        SelectPreset preset ->
+            case model of
+                Loading ->
+                    ( model, Cmd.none )
+
+                Page image ->
+                    let
+                        system =
+                            case preset of
+                                Koch ->
+                                    Example.koch
+
+                                Dragon ->
+                                    Example.dragon
+                    in
+                    ( Page { image | system = system }, Cmd.none )
 
         ChangeIterations string ->
             case model of
@@ -147,7 +170,7 @@ update msg model =
                     ( model, Cmd.none )
 
                 Page image ->
-                    ( Page { image | editor = True }, Cmd.none )
+                    ( Page { image | controls = image.controls |> Controls.show }, Cmd.none )
 
         CloseEditor ->
             case model of
@@ -155,7 +178,7 @@ update msg model =
                     ( model, Cmd.none )
 
                 Page image ->
-                    ( Page { image | editor = False }, Cmd.none )
+                    ( Page { image | controls = image.controls |> Controls.hide }, Cmd.none )
 
 
 {-| Generator for a random pleasing color.
@@ -195,7 +218,7 @@ view model =
             Html.text "loading..."
 
         Page image ->
-            Article.frame image.editor (mastheadView image) prose
+            Article.frame image.controls.visible (mastheadView image) prose
 
 
 systemConfig : System.Config Msg
@@ -218,8 +241,11 @@ mastheadView image =
 
 
 controlsView : Image -> Html Msg
-controlsView { system, editor } =
+controlsView image =
     let
+        { system } =
+            image
+
         controlsConfig =
             Controls.config
                 { onOpen = ShowEditor
@@ -227,13 +253,13 @@ controlsView { system, editor } =
                 , title = "l-system builder"
                 }
 
-        state =
-            { visible = editor }
-
         controlFor iterations =
-            Controls.string
-                (toString iterations)
-                (String.fromList (System.expand { system | iterations = iterations }))
+            Controls.text <|
+                toString iterations
+                    ++ String.fromList (System.expand { system | iterations = iterations })
+
+        state =
+            image.controls
 
         -- What the production looks like after so many iterations
         expansions =
@@ -246,11 +272,15 @@ controlsView { system, editor } =
         rulesDict =
             Dict.foldl rulesToString Dict.empty system.rules
 
+        presets =
+            [ ( "Koch Curve", Koch ), ( "Dragon Curve", Dragon ) ]
+
         controls =
-            [ Controls.string "start rule" (String.fromList system.start)
+            [ Controls.union "preset" presets SelectPreset
+            , Controls.string "start rule" (String.fromList system.start)
             , Controls.dict "rules" rulesDict
             , Controls.int "angle (degrees)" system.angle ChangeAngle
-            , Controls.int "number of iterations" system.iterations ChangeIterations
+            , Controls.int "iterations" system.iterations ChangeIterations
             , Controls.text "valid characters in the rules include [ (add a new level on the stack), ] (pop a level off the stack), + (turn clockwise by given angle), - (counterclockwise), or another rule. The rules above will get expanded into:"
             ]
                 ++ expansions
