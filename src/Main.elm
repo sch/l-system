@@ -257,7 +257,7 @@ mastheadView image preset =
 
 
 controlsView : Image -> Preset -> Html Msg
-controlsView image preset =
+controlsView image selectedPreset =
     let
         { system } =
             image
@@ -288,21 +288,17 @@ controlsView image preset =
         rulesDict =
             Dict.foldl rulesToString Dict.empty system.rules
 
-        selectWithPreset ( label, candidatePreset ) =
-            ( label, candidatePreset, candidatePreset == preset )
-
         presets =
-            List.map selectWithPreset
-                [ ( "Koch Curve", Koch )
-                , ( "Dragon Curve", Dragon )
-                , ( "Plant", Plant )
-                , ( "Triangles", Triangles )
-                , ( "Mesh", Mesh )
-                , ( "Flower", Flower )
-                ]
+            [ ( "Koch Curve", Koch )
+            , ( "Dragon Curve", Dragon )
+            , ( "Plant", Plant )
+            , ( "Triangles", Triangles )
+            , ( "Mesh", Mesh )
+            , ( "Flower", Flower )
+            ]
 
         controls =
-            [ Controls.union "preset" presets SelectPreset
+            [ Controls.union "preset" presets selectedPreset SelectPreset
             , Controls.string "start rule" (String.fromList system.start)
             , Controls.dict "rules" rulesDict
             , Controls.int "angle (degrees)" system.angle ChangeAngle

@@ -240,9 +240,18 @@ int text value handleChange =
     label text input
 
 
-union : Label -> List ( String, choice, Bool ) -> (choice -> msg) -> Html msg
-union text choices handleSelect =
-    label text <| Html.fieldset [] <| List.map (radioButton handleSelect) choices
+union : Label -> List ( String, choice ) -> choice -> (choice -> msg) -> Html msg
+union text choices selected handleSelect =
+    choices
+        |> List.map (indicateWhetherSelected selected)
+        |> List.map (radioButton handleSelect)
+        |> Html.fieldset []
+        |> label text
+
+
+indicateWhetherSelected : choice -> ( String, choice ) -> ( String, choice, Bool )
+indicateWhetherSelected selected ( label, choice ) =
+    ( label, choice, choice == selected )
 
 
 radioButton : (option -> msg) -> ( String, option, Bool ) -> Html msg
