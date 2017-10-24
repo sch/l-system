@@ -167,13 +167,8 @@ sidewaysTitle title =
     Html.div
         [ Html.Attributes.style
             [ ( "color", "white" )
-            , ( "margin-bottom", "80px" )
-            , ( "transform", "rotate(90deg)" )
-            , ( "transform-origin", "center left" )
+            , ( "writing-mode", "vertical-lr" )
             , ( "margin", "40px" )
-            , ( "width", "0" )
-            , ( "line-height", "1" )
-            , ( "white-space", "pre" )
             ]
         ]
         [ Html.text title ]
