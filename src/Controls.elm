@@ -240,13 +240,13 @@ int text value handleChange =
     label text input
 
 
-union : Label -> List ( String, choice ) -> (choice -> msg) -> Html msg
+union : Label -> List ( String, choice, Bool ) -> (choice -> msg) -> Html msg
 union text choices handleSelect =
     label text <| Html.fieldset [] <| List.map (radioButton handleSelect) choices
 
 
-radioButton : (option -> msg) -> ( String, option ) -> Html msg
-radioButton handleSelect ( label, option ) =
+radioButton : (option -> msg) -> ( String, option, Bool ) -> Html msg
+radioButton handleSelect ( label, option, selected ) =
     Html.label
         [ Html.Attributes.style
             [ ( "display", "block" )
@@ -256,7 +256,10 @@ radioButton handleSelect ( label, option ) =
         ]
         [ Html.input
             [ Html.Attributes.type_ "radio"
+            , Html.Attributes.style [ ( "margin-right", "10px" ) ]
             , Html.Events.onClick (handleSelect option)
+            , Html.Attributes.name "option"
+            , Html.Attributes.checked selected
             ]
             []
         , Html.text label

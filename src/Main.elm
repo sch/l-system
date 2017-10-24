@@ -289,12 +289,12 @@ controlsView image =
             Dict.foldl rulesToString Dict.empty system.rules
 
         presets =
-            [ ( "Koch Curve", Koch )
-            , ( "Dragon Curve", Dragon )
-            , ( "Plant", Plant )
-            , ( "Triangles", Triangles )
-            , ( "Mesh", Mesh )
-            , ( "Flower", Flower )
+            [ ( "Koch Curve", Koch, False )
+            , ( "Dragon Curve", Dragon, False )
+            , ( "Plant", Plant, False )
+            , ( "Triangles", Triangles, True )
+            , ( "Mesh", Mesh, False )
+            , ( "Flower", Flower, False )
             ]
 
         controls =
