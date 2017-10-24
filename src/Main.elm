@@ -34,7 +34,7 @@ main =
 
 type Model
     = Loading
-    | Page Image
+    | Page Image Preset
 
 
 type alias Image =
@@ -93,17 +93,17 @@ update msg model =
                     , controls = Controls.state
                     }
             in
-            ( Page image, Cmd.none )
+            ( Page image Koch, Cmd.none )
 
         ChangeProgress progress ->
             case model of
                 Loading ->
                     ( model, Cmd.none )
 
-                Page image ->
+                Page image preset ->
                     let
                         page =
-                            Page { image | progress = progress }
+                            Page { image | progress = progress } preset
                     in
                     ( page, Cmd.none )
 
@@ -112,7 +112,7 @@ update msg model =
                 Loading ->
                     ( model, Cmd.none )
 
-                Page image ->
+                Page image _ ->
                     let
                         system =
                             case preset of
@@ -134,14 +134,14 @@ update msg model =
                                 Flower ->
                                     Example.tweet897597535254130690
                     in
-                    ( Page { image | system = system }, Cmd.none )
+                    ( Page { image | system = system } preset, Cmd.none )
 
         ChangeIterations string ->
             case model of
                 Loading ->
                     ( model, Cmd.none )
 
-                Page image ->
+                Page image preset ->
                     let
                         iterations =
                             String.toInt string
@@ -154,7 +154,7 @@ update msg model =
                             { system | iterations = iterations }
 
                         page =
-                            Page { image | system = newSystem }
+                            Page { image | system = newSystem } preset
                     in
                     ( page, Cmd.none )
 
@@ -163,7 +163,7 @@ update msg model =
                 Loading ->
                     ( model, Cmd.none )
 
-                Page image ->
+                Page image preset ->
                     let
                         angle =
                             String.toInt string
@@ -176,7 +176,7 @@ update msg model =
                             { system | angle = angle }
 
                         page =
-                            Page { image | system = newSystem }
+                            Page { image | system = newSystem } preset
                     in
                     ( page, Cmd.none )
 
@@ -185,16 +185,16 @@ update msg model =
                 Loading ->
                     ( model, Cmd.none )
 
-                Page image ->
-                    ( Page { image | controls = image.controls |> Controls.show }, Cmd.none )
+                Page image preset ->
+                    ( Page { image | controls = image.controls |> Controls.show } preset, Cmd.none )
 
         CloseEditor ->
             case model of
                 Loading ->
                     ( model, Cmd.none )
 
-                Page image ->
-                    ( Page { image | controls = image.controls |> Controls.hide }, Cmd.none )
+                Page image preset ->
+                    ( Page { image | controls = image.controls |> Controls.hide } preset, Cmd.none )
 
 
 {-| Generator for a random pleasing color.
@@ -233,8 +233,8 @@ view model =
         Loading ->
             Html.text "loading..."
 
-        Page image ->
-            Article.frame image.controls.visible (mastheadView image) prose
+        Page image preset ->
+            Article.frame image.controls.visible (mastheadView image preset) prose
 
 
 systemConfig : System.Config Msg
@@ -242,8 +242,8 @@ systemConfig =
     System.config { onSwipe = ChangeProgress }
 
 
-mastheadView : Image -> List (Html Msg)
-mastheadView image =
+mastheadView : Image -> Preset -> List (Html Msg)
+mastheadView image preset =
     let
         state =
             { colorscheme = image.colorscheme
@@ -252,12 +252,12 @@ mastheadView image =
             }
     in
     [ Html.Lazy.lazy2 System.view systemConfig state
-    , controlsView image
+    , controlsView image preset
     ]
 
 
-controlsView : Image -> Html Msg
-controlsView image =
+controlsView : Image -> Preset -> Html Msg
+controlsView image preset =
     let
         { system } =
             image
@@ -288,14 +288,18 @@ controlsView image =
         rulesDict =
             Dict.foldl rulesToString Dict.empty system.rules
 
+        selectWithPreset ( label, candidatePreset ) =
+            ( label, candidatePreset, candidatePreset == preset )
+
         presets =
-            [ ( "Koch Curve", Koch, False )
-            , ( "Dragon Curve", Dragon, False )
-            , ( "Plant", Plant, False )
-            , ( "Triangles", Triangles, True )
-            , ( "Mesh", Mesh, False )
-            , ( "Flower", Flower, False )
-            ]
+            List.map selectWithPreset
+                [ ( "Koch Curve", Koch )
+                , ( "Dragon Curve", Dragon )
+                , ( "Plant", Plant )
+                , ( "Triangles", Triangles )
+                , ( "Mesh", Mesh )
+                , ( "Flower", Flower )
+                ]
 
         controls =
             [ Controls.union "preset" presets SelectPreset
