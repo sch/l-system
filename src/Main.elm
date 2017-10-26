@@ -234,7 +234,10 @@ view model =
             Html.text "loading..."
 
         Page image preset ->
-            Article.frame image.controls.visible (mastheadView image preset) prose
+            Article.frameWithMarkdownBody
+                image.controls.visible
+                (mastheadView image preset)
+                prose
 
 
 systemConfig : System.Config Msg

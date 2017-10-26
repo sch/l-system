@@ -1,4 +1,4 @@
-module Article exposing (frame)
+module Article exposing (frame, frameWithMarkdownBody)
 
 {-| This library allows you to define an article in Markdown, but have a masthead
 built as an arbitrary view.
@@ -20,8 +20,8 @@ import Markdown
   - some markdown for the article itself
 
 -}
-frame : Bool -> List (Html a) -> String -> Html a
-frame locked masthead prose =
+frame : Bool -> List (Html a) -> Html a -> Html a
+frame locked masthead body =
     Html.div
         [ Html.Attributes.style
             [ ( "height", "100%" )
@@ -50,8 +50,13 @@ frame locked masthead prose =
                 , ( "font-family", "-apple-system" )
                 ]
             ]
-            [ Html.Lazy.lazy markdown prose ]
+            [ body ]
         ]
+
+
+frameWithMarkdownBody : Bool -> List (Html a) -> String -> Html a
+frameWithMarkdownBody locked masthead markdownString =
+    frame locked masthead <| Html.Lazy.lazy markdown markdownString
 
 
 markdown : String -> Html a
