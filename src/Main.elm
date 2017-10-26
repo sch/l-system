@@ -308,7 +308,6 @@ controlsView image selectedPreset =
             , Controls.int "iterations" system.iterations ChangeIterations
             , Controls.text "valid characters in the rules include [ (add a new level on the stack), ] (pop a level off the stack), + (turn clockwise by given angle), - (counterclockwise), or another rule. The rules above will get expanded into:"
             ]
-                ++ expansions
     in
     Controls.view controlsConfig state controls
 
