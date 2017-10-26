@@ -56,6 +56,13 @@ hide state =
     { state | visible = False }
 
 
+type alias RadioButtonState option =
+    { label : String
+    , option : option
+    , isSelected : Bool
+    }
+
+
 
 -- View
 
@@ -249,13 +256,16 @@ union text choices selected handleSelect =
         |> label text
 
 
-indicateWhetherSelected : choice -> ( String, choice ) -> ( String, choice, Bool )
+indicateWhetherSelected : choice -> ( String, choice ) -> RadioButtonState choice
 indicateWhetherSelected selected ( label, choice ) =
-    ( label, choice, choice == selected )
+    { label = label
+    , option = choice
+    , isSelected = choice == selected
+    }
 
 
-radioButton : (option -> msg) -> ( String, option, Bool ) -> Html msg
-radioButton handleSelect ( label, option, selected ) =
+radioButton : (option -> msg) -> RadioButtonState option -> Html msg
+radioButton handleSelect option =
     Html.label
         [ Html.Attributes.style
             [ ( "display", "block" )
@@ -266,12 +276,12 @@ radioButton handleSelect ( label, option, selected ) =
         [ Html.input
             [ Html.Attributes.type_ "radio"
             , Html.Attributes.style [ ( "margin-right", "10px" ) ]
-            , Html.Events.onClick (handleSelect option)
+            , Html.Events.onClick (handleSelect option.option)
             , Html.Attributes.name "option"
-            , Html.Attributes.checked selected
+            , Html.Attributes.checked option.isSelected
             ]
             []
-        , Html.text label
+        , Html.text option.label
         ]
 
 
