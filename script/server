@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# script/server: Run a development server for this project
+
+set -e
+
+cd "$(dirname "$0")/.."
+
+echo "\n--> App running at http://localhost:8000/src/Main.elm\n"
+
+elm-reactor
+
