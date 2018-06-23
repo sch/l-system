@@ -203,3 +203,18 @@ plant =
             , ( 'F', "FF" )
             ]
         }
+
+
+{-| <https://twitter.com/LSystemBot/status/1009998172490366977>
+-}
+eyes : System
+eyes =
+    parseAsSystem
+        { start = "FTT"
+        , angle = 147
+        , iterations = 6
+        , rules =
+            [ ( 'T', "T-T-FFTF" )
+            , ( 'F', "+-[-[-][]F]" )
+            ]
+        }

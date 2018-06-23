@@ -12,6 +12,7 @@ import Svg.Events
 import Svg.Path
 
 
+
 -- Config
 
 
@@ -74,6 +75,7 @@ expand : System -> Production
 expand system =
     if system.iterations < 1 then
         system.start
+
     else
         let
             expansionFor char =
@@ -271,8 +273,8 @@ view (Config { reportPosition }) { colorscheme, progress, system } =
         , Attributes.width "100%"
         , Attributes.height "100%"
         , Attributes.preserveAspectRatio "xMidYMid meet"
-        , Attributes.viewBox <| viewboxString extent
-        , Svg.Events.on "mousemove" <| Pointer.horizontal reportPosition
+        , Attributes.viewBox (viewboxString extent)
+        , Svg.Events.on "mousemove" (Pointer.horizontal reportPosition)
         ]
         [ pathView path colorscheme.foreground ]
 
@@ -314,8 +316,10 @@ clamp : comparable -> comparable -> comparable -> comparable
 clamp low high n =
     if n < low then
         low
+
     else if n > high then
         high
+
     else
         n
 
@@ -339,6 +343,7 @@ interpolatePoints progress points =
         permitPoint ( index, point ) list =
             if toFloat index > (progress * multiplier) then
                 list
+
             else
                 point :: list
     in
