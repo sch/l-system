@@ -25,19 +25,19 @@ config { onSwipe } =
 
 
 type alias Rules =
-    Dict Char Production
+    Dict Char Axiom
 
 
 type alias Angle =
     Int
 
 
-type alias Production =
+type alias Axiom =
     List Char
 
 
 type alias System =
-    { start : Production
+    { start : Axiom
     , angle : Angle
     , iterations : Int
     , rules : Rules
@@ -70,7 +70,7 @@ type alias Line =
     }
 
 
-expand : System -> Production
+expand : System -> Axiom
 expand system =
     if system.iterations < 1 then
         system.start
@@ -155,7 +155,7 @@ toSubpath points =
             }
 
 
-toPath : Int -> Float -> Production -> ( List SubPath, Extent )
+toPath : Int -> Float -> Axiom -> ( List SubPath, Extent )
 toPath angle length chars =
     let
         startState =
@@ -165,7 +165,7 @@ toPath angle length chars =
             , points = [ ( 0, 0 ) ]
             }
 
-        toPathHelp : Production -> State -> List SubPath -> ( List SubPath, Extent )
+        toPathHelp : Axiom -> State -> List SubPath -> ( List SubPath, Extent )
         toPathHelp chars_ cursor path =
             case chars_ of
                 [] ->
