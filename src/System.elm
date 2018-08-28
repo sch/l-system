@@ -1,15 +1,14 @@
 module System exposing (Config, System, config, expand, view)
 
-import Color exposing (Color)
-import Color.Convert exposing (colorToHex)
+import Color exposing (Color, colorToHex)
 import Colorscheme exposing (Colorscheme)
 import Dict exposing (Dict)
+import Path.LowLevel as Path exposing (SubPath)
 import Pointer
 import Stack exposing (Stack)
 import Svg exposing (Svg)
 import Svg.Attributes as Attributes
 import Svg.Events
-import Svg.Path
 
 
 
@@ -142,19 +141,21 @@ pointMax ( x1, y1 ) ( x2, y2 ) =
     ( max x1 x2, max y1 y2 )
 
 
-toSubpath : List Point -> Svg.Path.Subpath
+toSubpath : List Point -> SubPath
 toSubpath points =
     case points of
         [] ->
-            Svg.Path.emptySubpath
+            { moveto = Path.MoveTo Path.Relative ( 0, 0 )
+            , drawtos = []
+            }
 
         head :: rest ->
-            Svg.Path.subpath (Svg.Path.startAt head)
-                Svg.Path.open
-                [ Svg.Path.lineToMany rest ]
+            { moveto = Path.MoveTo Path.Absolute head
+            , drawtos = [ Path.LineTo Path.Absolute rest ]
+            }
 
 
-toPath : Int -> Float -> Production -> ( Svg.Path.Path, Extent )
+toPath : Int -> Float -> Production -> ( List SubPath, Extent )
 toPath angle length chars =
     let
         startState =
@@ -164,9 +165,9 @@ toPath angle length chars =
             , points = [ ( 0, 0 ) ]
             }
 
-        toPathHelp : Production -> State -> Svg.Path.Path -> ( Svg.Path.Path, Extent )
-        toPathHelp chars cursor path =
-            case chars of
+        toPathHelp : Production -> State -> List SubPath -> ( List SubPath, Extent )
+        toPathHelp chars_ cursor path =
+            case chars_ of
                 [] ->
                     ( toSubpath cursor.points :: path, cursor.size )
 
@@ -308,7 +309,7 @@ viewboxString { min, max } =
     , width + (paddingX * 2)
     , height + (paddingY * 2)
     ]
-        |> List.map toString
+        |> List.map String.fromFloat
         |> String.join " "
 
 
@@ -325,8 +326,8 @@ clamp low high n =
 
 
 interpolate : Float -> Float -> Float -> Float
-interpolate start end amount =
-    (amount * (end - start)) + start
+interpolate begin end amount =
+    (amount * (end - begin)) + begin
 
 
 interpolatePoint : Point -> Point -> Float -> Point
@@ -352,12 +353,12 @@ interpolatePoints progress points =
         |> List.foldl permitPoint []
 
 
-pathView : Svg.Path.Path -> Color -> Svg a
+pathView : List SubPath -> Color -> Svg a
 pathView path color =
     Svg.path
-        [ Attributes.d <| Svg.Path.pathToString path
+        [ Attributes.d (Path.toString path)
         , Attributes.fill "none"
-        , Attributes.stroke <| colorToHex color
+        , Attributes.stroke (colorToHex color)
         , Attributes.strokeLinecap "round"
         , Attributes.strokeLinejoin "round"
         ]

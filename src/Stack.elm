@@ -21,5 +21,5 @@ pop stack =
         [] ->
             Nothing
 
-        item :: stack ->
-            Just ( item, stack )
+        item :: rest ->
+            Just ( item, rest )

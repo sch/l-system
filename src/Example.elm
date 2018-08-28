@@ -21,7 +21,11 @@ parseAsSystem definition =
                 |> List.map (\( char, str ) -> ( char, String.toList str ))
                 |> Dict.fromList
     in
-    { definition | rules = rules, start = start }
+    { start = start
+    , angle = definition.angle
+    , iterations = definition.iterations
+    , rules = rules
+    }
 
 
 one : System

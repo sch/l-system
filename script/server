@@ -8,5 +8,5 @@ cd "$(dirname "$0")/.."
 
 echo "\n--> App running at http://localhost:8000/src/Main.elm\n"
 
-elm-reactor
+elm reactor
 

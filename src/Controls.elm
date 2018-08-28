@@ -1,7 +1,6 @@
 module Controls exposing (Config, State, config, dict, hide, int, show, state, string, text, union, view)
 
-import Color
-import Color.Convert exposing (colorToHex)
+import Color exposing (Color, colorToHex)
 import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes
@@ -48,13 +47,13 @@ state =
 
 
 show : State -> State
-show state =
-    { state | visible = True }
+show state_ =
+    { state_ | visible = True }
 
 
 hide : State -> State
-hide state =
-    { state | visible = False }
+hide state_ =
+    { state_ | visible = False }
 
 
 type alias RadioButtonState option =
@@ -110,19 +109,16 @@ fieldset {
 
 
 view : Config msg -> State -> List (Html msg) -> Html msg
-view config state controls =
+view (Config { openControls, hideControls, title }) state_ controls =
     let
-        (Config { openControls, hideControls, title }) =
-            config
-
         styles =
-            [ ( "background-color", colorToHex (Color.grayscale 0.9) )
-            , ( "color", colorToHex (Color.grayscale 0.3) )
-            , ( "font-family", "SFMono-Regular, 'Inconsolata', monospace" )
-            , ( "flex-shrink", "0" )
-            , ( "overflow", "auto" )
-            , ( "height", "100%" )
-            , ( "box-sizing", "border-box" )
+            [ Html.Attributes.style "background-color" <| colorToHex (Color.grayscale 0.9)
+            , Html.Attributes.style "color" <| colorToHex (Color.grayscale 0.3)
+            , Html.Attributes.style "font-family" "SFMono-Regular, 'Inconsolata', monospace"
+            , Html.Attributes.style "flex-shrink" "0"
+            , Html.Attributes.style "overflow" "auto"
+            , Html.Attributes.style "height" "100%"
+            , Html.Attributes.style "box-sizing" "border-box"
             ]
 
         styleTag =
@@ -130,13 +126,13 @@ view config state controls =
 
         attributes =
             if state.visible then
-                [ Html.Attributes.style styles
-                ]
+                styles
 
             else
-                [ Html.Attributes.style <| ( "cursor", "pointer" ) :: styles
+                [ Html.Attributes.style "cursor" "pointer"
                 , Html.Events.onClick openControls
                 ]
+                    |> List.append styles
 
         body =
             if state.visible then
@@ -179,7 +175,7 @@ sidewaysTitle title =
 
 
 label : Label -> Html msg -> Html msg
-label text element =
+label labelText element =
     let
         leftHand =
             Html.div
@@ -187,7 +183,7 @@ label text element =
                 , Html.Attributes.style "display" "table-cell"
                 , Html.Attributes.style "text-align" "right"
                 ]
-                [ Html.text text ]
+                [ Html.text labelText ]
 
         rightHand =
             Html.div
@@ -209,16 +205,16 @@ label text element =
 
 
 string : Label -> String -> Html msg
-string text value =
-    label text (Html.text value)
+string text_ value =
+    label text_ (Html.text value)
 
 
-int : Label -> int -> (String -> msg) -> Html msg
-int text value handleChange =
+int : Label -> Int -> (String -> msg) -> Html msg
+int labelText value handleChange =
     let
         input =
             Html.input
-                [ Html.Attributes.value (toString value)
+                [ Html.Attributes.value (String.fromInt value)
                 , Html.Attributes.type_ "number"
                 , Html.Attributes.class "Input"
                 , Html.Attributes.size 5
@@ -233,21 +229,21 @@ int text value handleChange =
                 ]
                 []
     in
-    label text input
+    label labelText input
 
 
 union : Label -> List ( String, choice ) -> choice -> (choice -> msg) -> Html msg
-union text choices selected handleSelect =
+union labelText choices selected handleSelect =
     choices
         |> List.map (indicateWhetherSelected selected)
         |> List.map (radioButton handleSelect)
         |> Html.fieldset []
-        |> label text
+        |> label labelText
 
 
 indicateWhetherSelected : choice -> ( String, choice ) -> RadioButtonState choice
-indicateWhetherSelected selected ( label, choice ) =
-    { label = label
+indicateWhetherSelected selected ( labelText, choice ) =
+    { label = labelText
     , option = choice
     , isSelected = choice == selected
     }
@@ -273,11 +269,11 @@ radioButton handleSelect option =
 
 
 dict : String -> Dict String String -> Html msg
-dict labelText dict =
+dict labelText dict_ =
     label labelText <|
         Html.div
             []
-            (Dict.foldl keyValueView [] dict)
+            (Dict.foldl keyValueView [] dict_)
 
 
 keyValueView : String -> String -> List (Html msg) -> List (Html msg)
@@ -286,7 +282,7 @@ keyValueView key value html =
 
 
 text : String -> Html msg
-text text =
+text text_ =
     Html.div
         [ Html.Attributes.style "word-wrap" "break-word"
         , Html.Attributes.style "overflow-wrap" "break-word"
@@ -294,11 +290,11 @@ text text =
         , Html.Attributes.style "caption-side" "bottom"
         , Html.Attributes.style "padding" "40px"
         ]
-        [ Html.text text ]
+        [ Html.text text_ ]
 
 
 buttonTo : msg -> String -> Html msg
-buttonTo msg text =
+buttonTo msg buttonText =
     Html.button
         [ Html.Attributes.class "Button"
         , Html.Events.onClick msg
@@ -309,4 +305,4 @@ buttonTo msg text =
         , Html.Attributes.style "outline" "none"
         , Html.Attributes.style "cursor" "pointer"
         ]
-        [ Html.text text ]
+        [ Html.text buttonText ]

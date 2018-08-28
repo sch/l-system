@@ -1,6 +1,7 @@
 module Main exposing (main)
 
 import Article
+import Browser
 import Color exposing (Color)
 import Colorscheme exposing (Colorscheme)
 import Controls
@@ -18,9 +19,9 @@ example =
     Example.tweet897597535254130690
 
 
-main : Program Never Model Msg
+main : Program () Model Msg
 main =
-    Html.program
+    Browser.element
         { init = init
         , update = update
         , subscriptions = subscriptions
@@ -66,8 +67,8 @@ type Msg
     | SelectPreset Preset
 
 
-init : ( Model, Cmd Msg )
-init =
+init : flags -> ( Model, Cmd Msg )
+init flags =
     let
         loadCommand =
             Task.succeed Randomize |> Task.perform identity
@@ -149,7 +150,7 @@ update msg model =
                     let
                         iterations =
                             String.toInt string
-                                |> Result.withDefault image.system.iterations
+                                |> Maybe.withDefault image.system.iterations
 
                         { system } =
                             image
@@ -171,7 +172,7 @@ update msg model =
                     let
                         angle =
                             String.toInt string
-                                |> Result.withDefault image.system.angle
+                                |> Maybe.withDefault image.system.angle
 
                         { system } =
                             image
@@ -278,7 +279,7 @@ controlsView image selectedPreset =
 
         controlFor iterations =
             Controls.text <|
-                toString iterations
+                String.fromInt iterations
                     ++ String.fromList (System.expand { system | iterations = iterations })
 
         state =
@@ -290,7 +291,7 @@ controlsView image selectedPreset =
                 |> List.map controlFor
 
         rulesToString char production dict =
-            Dict.insert (toString char) (String.fromList production) dict
+            Dict.insert (String.fromChar char) (String.fromList production) dict
 
         rulesDict =
             Dict.foldl rulesToString Dict.empty system.rules
