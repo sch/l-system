@@ -1,4 +1,4 @@
-module Example exposing (..)
+module Example exposing (dragon, eyes, four, koch, one, parseAsSystem, plant, three, tweet896797261471989760, tweet897416367514689536, tweet897597535254130690, tweet897839129299374082, tweet898382707616501760, two)
 
 import Dict exposing (Dict)
 import System exposing (System)

@@ -348,7 +348,7 @@ interpolatePoints progress points =
                 point :: list
     in
     points
-        |> List.indexedMap (,)
+        |> List.indexedMap (\a b -> ( a, b ))
         |> List.foldl permitPoint []
 
 

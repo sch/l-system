@@ -19,6 +19,7 @@ complementary color =
         normalizedLightness =
             if abs (0.5 - lightness) < 0.2 then
                 lightness - 0.3
+
             else
                 lightness
 

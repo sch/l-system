@@ -18,6 +18,7 @@ module Pointer exposing (Offset, Percentage, horizontal, progress, vertical)
 import Json.Decode as Json exposing (Decoder)
 
 
+
 -- Mouse Movement
 
 
@@ -91,5 +92,6 @@ failIfZero : String -> Float -> Decoder Float
 failIfZero message value =
     if value == 0 then
         Json.fail message
+
     else
         Json.succeed value

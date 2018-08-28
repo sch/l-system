@@ -8,6 +8,7 @@ import Html.Attributes
 import Html.Events
 
 
+
 -- Config
 
 
@@ -131,6 +132,7 @@ view config state controls =
             if state.visible then
                 [ Html.Attributes.style styles
                 ]
+
             else
                 [ Html.Attributes.style <| ( "cursor", "pointer" ) :: styles
                 , Html.Events.onClick openControls
@@ -140,13 +142,12 @@ view config state controls =
             if state.visible then
                 [ styleTag, heading hideControls title ]
                     ++ [ Html.div
-                            [ Html.Attributes.style
-                                [ ( "display", "table" )
-                                , ( "padding", "0 40px" )
-                                ]
+                            [ Html.Attributes.style "display" "table"
+                            , Html.Attributes.style "padding" "0 40px"
                             ]
                             controls
                        ]
+
             else
                 [ styleTag, sidewaysTitle title ]
     in
@@ -156,14 +157,12 @@ view config state controls =
 heading : msg -> String -> Html msg
 heading closeMessage title =
     Html.div
-        [ Html.Attributes.style
-            [ ( "display", "flex" )
-            , ( "padding", "0 0 40px 40px" )
-            , ( "align-items", "baseline" )
-            ]
+        [ Html.Attributes.style "display" "flex"
+        , Html.Attributes.style "padding" "0 0 40px 40px"
+        , Html.Attributes.style "align-items" "baseline"
         ]
         [ Html.div
-            [ Html.Attributes.style [ ( "flex", "1" ), ( "color", "white" ) ] ]
+            [ Html.Attributes.style "flex" "1", Html.Attributes.style "color" "white" ]
             [ Html.text title ]
         , buttonTo closeMessage "close"
         ]
@@ -172,11 +171,9 @@ heading closeMessage title =
 sidewaysTitle : String -> Html msg
 sidewaysTitle title =
     Html.div
-        [ Html.Attributes.style
-            [ ( "color", "white" )
-            , ( "writing-mode", "vertical-lr" )
-            , ( "margin", "40px" )
-            ]
+        [ Html.Attributes.style "color" "white"
+        , Html.Attributes.style "writing-mode" "vertical-lr"
+        , Html.Attributes.style "margin" "40px"
         ]
         [ Html.text title ]
 
@@ -186,32 +183,26 @@ label text element =
     let
         leftHand =
             Html.div
-                [ Html.Attributes.style
-                    [ ( "white-space", "pre" )
-                    , ( "display", "table-cell" )
-                    , ( "text-align", "right" )
-                    ]
+                [ Html.Attributes.style "white-space" "pre"
+                , Html.Attributes.style "display" "table-cell"
+                , Html.Attributes.style "text-align" "right"
                 ]
                 [ Html.text text ]
 
         rightHand =
             Html.div
-                [ Html.Attributes.style
-                    [ ( "padding-bottom", "40px" )
-                    , ( "padding-left", "20px" )
-                    , ( "display", "table-cell" )
-                    , ( "white-space", "pre" )
-                    ]
+                [ Html.Attributes.style "padding-bottom" "40px"
+                , Html.Attributes.style "padding-left" "20px"
+                , Html.Attributes.style "display" "table-cell"
+                , Html.Attributes.style "white-space" "pre"
                 ]
                 [ element ]
     in
     Html.div
-        [ Html.Attributes.style [ ( "display", "table-row-group" ) ] ]
+        [ Html.Attributes.style "display" "table-row-group" ]
         [ Html.div
-            [ Html.Attributes.style
-                [ ( "display", "table-row" )
-                , ( "vertical-align", "center" )
-                ]
+            [ Html.Attributes.style "display" "table-row"
+            , Html.Attributes.style "vertical-align" "center"
             ]
             [ leftHand, rightHand ]
         ]
@@ -234,13 +225,11 @@ int text value handleChange =
                 , Html.Attributes.min "0"
                 , Html.Attributes.pattern "[0-9]*"
                 , Html.Events.onInput handleChange
-                , Html.Attributes.style
-                    [ ( "font-family", "inherit" )
-                    , ( "font-size", "inherit" )
-                    , ( "border-radius", "0.4em" )
-                    , ( "outline", "none" )
-                    , ( "width", "3em" )
-                    ]
+                , Html.Attributes.style "font-family" "inherit"
+                , Html.Attributes.style "font-size" "inherit"
+                , Html.Attributes.style "border-radius" "0.4em"
+                , Html.Attributes.style "outline" "none"
+                , Html.Attributes.style "width" "3em"
                 ]
                 []
     in
@@ -267,15 +256,13 @@ indicateWhetherSelected selected ( label, choice ) =
 radioButton : (option -> msg) -> RadioButtonState option -> Html msg
 radioButton handleSelect option =
     Html.label
-        [ Html.Attributes.style
-            [ ( "display", "block" )
-            , ( "padding-bottom", "20px" )
-            , ( "cursor", "pointer" )
-            ]
+        [ Html.Attributes.style "display" "block"
+        , Html.Attributes.style "padding-bottom" "20px"
+        , Html.Attributes.style "cursor" "pointer"
         ]
         [ Html.input
             [ Html.Attributes.type_ "radio"
-            , Html.Attributes.style [ ( "margin-right", "10px" ) ]
+            , Html.Attributes.style "margin-right" "10px"
             , Html.Events.onClick (handleSelect option.option)
             , Html.Attributes.name "option"
             , Html.Attributes.checked option.isSelected
@@ -301,13 +288,11 @@ keyValueView key value html =
 text : String -> Html msg
 text text =
     Html.div
-        [ Html.Attributes.style
-            [ ( "word-wrap", "break-word" )
-            , ( "overflow-wrap", "break-word" )
-            , ( "display", "table-caption" )
-            , ( "caption-side", "bottom" )
-            , ( "padding", "40px" )
-            ]
+        [ Html.Attributes.style "word-wrap" "break-word"
+        , Html.Attributes.style "overflow-wrap" "break-word"
+        , Html.Attributes.style "display" "table-caption"
+        , Html.Attributes.style "caption-side" "bottom"
+        , Html.Attributes.style "padding" "40px"
         ]
         [ Html.text text ]
 
@@ -317,13 +302,11 @@ buttonTo msg text =
     Html.button
         [ Html.Attributes.class "Button"
         , Html.Events.onClick msg
-        , Html.Attributes.style
-            [ ( "border-width", "0" )
-            , ( "font-family", "inherit" )
-            , ( "font-size", "inherit" )
-            , ( "padding", "40px 40px" )
-            , ( "outline", "none" )
-            , ( "cursor", "pointer" )
-            ]
+        , Html.Attributes.style "border-width" "0"
+        , Html.Attributes.style "font-family" "inherit"
+        , Html.Attributes.style "font-size" "inherit"
+        , Html.Attributes.style "padding" "40px 40px"
+        , Html.Attributes.style "outline" "none"
+        , Html.Attributes.style "cursor" "pointer"
         ]
         [ Html.text text ]
