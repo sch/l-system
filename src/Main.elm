@@ -21,7 +21,7 @@ example =
 
 main : Program () Model Msg
 main =
-    Browser.element
+    Browser.document
         { init = init
         , update = update
         , subscriptions = subscriptions
@@ -232,17 +232,23 @@ subscriptions _ =
 -- View
 
 
-view : Model -> Html Msg
+view : Model -> Browser.Document Msg
 view model =
     case model of
         Loading ->
-            Html.text "loading..."
+            { title = "L-System Builder"
+            , body = [ Html.text "loading..." ]
+            }
 
         Page image preset ->
-            Article.frameWithMarkdownBody
-                image.controls.visible
-                (mastheadView image preset)
-                ""
+            { title = "L-System Builder"
+            , body =
+                [ Article.frameWithMarkdownBody
+                    image.controls.visible
+                    (mastheadView image preset)
+                    ""
+                ]
+            }
 
 
 systemConfig : System.Config Msg

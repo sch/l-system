@@ -43,7 +43,7 @@ type alias State =
 
 state : State
 state =
-    { visible = False }
+    { visible = True }
 
 
 show : State -> State
