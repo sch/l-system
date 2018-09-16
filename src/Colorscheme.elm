@@ -1,6 +1,8 @@
-module Colorscheme exposing (Colorscheme, complementary)
+module Colorscheme exposing (Colorscheme, complementary, random)
 
 import Color exposing (Color)
+import Random
+import Random.Color as Random
 
 
 type alias Colorscheme =
@@ -14,7 +16,7 @@ complementary : Color -> Colorscheme
 complementary color =
     let
         { hue, saturation, lightness } =
-            Color.toHsl color
+            Color.toHsla color
 
         normalizedLightness =
             if abs (0.5 - lightness) < 0.2 then
@@ -30,3 +32,10 @@ complementary color =
             Color.hsl hue saturation (1 - normalizedLightness)
     in
     Colorscheme background foreground
+
+
+{-| Generator for a random, pleasing, high-contrast colorscheme.
+-}
+random : Random.Generator Colorscheme
+random =
+    Random.color |> Random.map complementary

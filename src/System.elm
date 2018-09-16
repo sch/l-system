@@ -1,6 +1,6 @@
 module System exposing (Config, System, config, expand, view)
 
-import Color exposing (Color, colorToHex)
+import Color exposing (Color)
 import Colorscheme exposing (Colorscheme)
 import Dict exposing (Dict)
 import Path.LowLevel as Path exposing (SubPath)
@@ -258,7 +258,7 @@ view : Config msg -> Model -> Svg msg
 view (Config { reportPosition }) { colorscheme, progress, system } =
     let
         styles =
-            "background-color:" ++ colorToHex colorscheme.background
+            "background-color" ++ ":" ++ Color.toCssString colorscheme.background
 
         chars =
             expand system
@@ -358,7 +358,7 @@ pathView path color =
     Svg.path
         [ Attributes.d (Path.toString path)
         , Attributes.fill "none"
-        , Attributes.stroke (colorToHex color)
+        , Attributes.stroke <| Color.toCssString color
         , Attributes.strokeLinecap "round"
         , Attributes.strokeLinejoin "round"
         ]

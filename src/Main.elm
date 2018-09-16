@@ -58,7 +58,7 @@ type Preset
 
 type Msg
     = Randomize
-    | Build Color
+    | Build Colorscheme
     | ShowEditor
     | CloseEditor
     | ChangeProgress Float
@@ -84,12 +84,12 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Randomize ->
-            ( model, Random.generate Build randomColor )
+            ( model, Random.generate Build Colorscheme.random )
 
-        Build color ->
+        Build colorscheme ->
             let
                 image =
-                    { colorscheme = Colorscheme.complementary color
+                    { colorscheme = colorscheme
                     , progress = 1
                     , system = example
                     , controls = Controls.state
@@ -200,23 +200,6 @@ update msg model =
 
                 Page image preset ->
                     ( Page { image | controls = image.controls |> Controls.hide } preset, Cmd.none )
-
-
-{-| Generator for a random pleasing color.
--}
-randomColor : Random.Generator Color
-randomColor =
-    let
-        hue =
-            Random.map degrees (Random.float 0 360)
-
-        saturation =
-            Random.float 0.1 0.9
-
-        lightness =
-            Random.float 0.1 0.9
-    in
-    Random.map3 Color.hsl hue saturation lightness
 
 
 

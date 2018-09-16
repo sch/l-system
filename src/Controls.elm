@@ -1,6 +1,19 @@
-module Controls exposing (Config, State, config, dict, hide, int, show, state, string, text, union, view)
+module Controls exposing
+    ( Config
+    , State
+    , config
+    , dict
+    , hide
+    , int
+    , show
+    , state
+    , string
+    , text
+    , union
+    , view
+    )
 
-import Color exposing (Color, colorToHex)
+import Color exposing (Color)
 import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes
@@ -112,8 +125,8 @@ view : Config msg -> State -> List (Html msg) -> Html msg
 view (Config { openControls, hideControls, title }) state_ controls =
     let
         styles =
-            [ Html.Attributes.style "background-color" <| colorToHex (Color.grayscale 0.9)
-            , Html.Attributes.style "color" <| colorToHex (Color.grayscale 0.3)
+            [ Html.Attributes.style "background-color" <| Color.toCssString Color.darkCharcoal
+            , Html.Attributes.style "color" <| Color.toCssString Color.darkGrey
             , Html.Attributes.style "font-family" "SFMono-Regular, 'Inconsolata', monospace"
             , Html.Attributes.style "flex-shrink" "0"
             , Html.Attributes.style "overflow" "auto"
