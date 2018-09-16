@@ -13,7 +13,6 @@
             "elm/json": "1.0.0",
             "elm/random": "1.0.0",
             "elm/svg": "1.0.0",
-            "elm-explorations/markdown": "1.0.0",
             "folkertdev/svg-path-lowlevel": "3.0.0"
         },
         "indirect": {

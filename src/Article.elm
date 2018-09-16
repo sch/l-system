@@ -1,7 +1,4 @@
-module Article exposing
-    ( frame
-    , frameWithMarkdownBody
-    )
+module Article exposing (frame)
 
 {-| This library allows you to define an article in Markdown, but have a masthead
 built as an arbitrary view.
@@ -13,7 +10,6 @@ built as an arbitrary view.
 import Html exposing (Html)
 import Html.Attributes
 import Html.Lazy
-import Markdown
 
 
 {-| The pieces of an article are:
@@ -50,13 +46,3 @@ frame locked masthead body =
             ]
             [ body ]
         ]
-
-
-frameWithMarkdownBody : Bool -> List (Html a) -> String -> Html a
-frameWithMarkdownBody locked masthead markdownString =
-    frame locked masthead <| Html.Lazy.lazy markdown markdownString
-
-
-markdown : String -> Html a
-markdown text =
-    Markdown.toHtml [] text

@@ -226,10 +226,10 @@ view model =
         Page image preset ->
             { title = "L-System Builder"
             , body =
-                [ Article.frameWithMarkdownBody
+                [ Article.frame
                     image.controls.visible
                     (mastheadView image preset)
-                    ""
+                    (Html.div [] [])
                 ]
             }
 
