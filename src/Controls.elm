@@ -4,9 +4,9 @@ module Controls exposing
     , config
     , dict
     , hide
+    , initialState
     , int
     , show
-    , state
     , string
     , text
     , union
@@ -54,19 +54,19 @@ type alias State =
     { visible : Bool }
 
 
-state : State
-state =
-    { visible = True }
+initialState : State
+initialState =
+    { visible = False }
 
 
 show : State -> State
-show state_ =
-    { state_ | visible = True }
+show state =
+    { state | visible = True }
 
 
 hide : State -> State
-hide state_ =
-    { state_ | visible = False }
+hide state =
+    { state | visible = False }
 
 
 type alias RadioButtonState option =
@@ -122,7 +122,7 @@ fieldset {
 
 
 view : Config msg -> State -> List (Html msg) -> Html msg
-view (Config { openControls, hideControls, title }) state_ controls =
+view (Config { openControls, hideControls, title }) state controls =
     let
         styles =
             [ Html.Attributes.style "background-color" <| Color.toCssString Color.darkCharcoal
@@ -171,7 +171,9 @@ heading closeMessage title =
         , Html.Attributes.style "align-items" "baseline"
         ]
         [ Html.div
-            [ Html.Attributes.style "flex" "1", Html.Attributes.style "color" "white" ]
+            [ Html.Attributes.style "flex" "1"
+            , Html.Attributes.style "color" "white"
+            ]
             [ Html.text title ]
         , buttonTo closeMessage "close"
         ]

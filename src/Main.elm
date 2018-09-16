@@ -92,7 +92,7 @@ update msg model =
                     { colorscheme = colorscheme
                     , progress = 1
                     , system = example
-                    , controls = Controls.state
+                    , controls = Controls.initialState
                     }
             in
             ( Page image Koch, Cmd.none )
