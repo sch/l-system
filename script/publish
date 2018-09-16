@@ -6,13 +6,16 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-elm make src/Main.elm --optimize --output build/main.js
+echo "Compiling..."
+elm make src/Main.elm --optimize --output build/main.js > /dev/null
 
+echo "Compressing..."
 curl \
+  --silent \
   --data-urlencode "js_code@build/main.js" \
   --data output_info=compiled_code \
   --data output_format=text \
-  --data compilation_level=SIMPLE_OPTIMIZATIONS \
+  --data compilation_level=ADVANCED_OPTIMIZATIONS \
   --output build/main.min.js \
   https://closure-compiler.appspot.com/compile
 
