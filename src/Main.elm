@@ -56,6 +56,31 @@ type Preset
     | Eyes
 
 
+systemForPreset : Preset -> System
+systemForPreset preset =
+    case preset of
+        Koch ->
+            Example.koch
+
+        Dragon ->
+            Example.dragon
+
+        Plant ->
+            Example.plant
+
+        Triangles ->
+            Example.tweet896797261471989760
+
+        Mesh ->
+            Example.tweet897839129299374082
+
+        Flower ->
+            Example.tweet897597535254130690
+
+        Eyes ->
+            Example.eyes
+
+
 type Msg
     = Randomize
     | Build Colorscheme
@@ -115,31 +140,7 @@ update msg model =
                     ( model, Cmd.none )
 
                 Page image _ ->
-                    let
-                        system =
-                            case preset of
-                                Koch ->
-                                    Example.koch
-
-                                Dragon ->
-                                    Example.dragon
-
-                                Plant ->
-                                    Example.plant
-
-                                Triangles ->
-                                    Example.tweet896797261471989760
-
-                                Mesh ->
-                                    Example.tweet897839129299374082
-
-                                Flower ->
-                                    Example.tweet897597535254130690
-
-                                Eyes ->
-                                    Example.eyes
-                    in
-                    ( Page { image | system = system } preset, Cmd.none )
+                    ( Page { image | system = systemForPreset preset } preset, Cmd.none )
 
         ChangeIterations string ->
             case model of
