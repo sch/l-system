@@ -33,13 +33,9 @@ main =
 -- Data
 
 
-type Model
-    = Loading
-    | Page Image Preset
-
-
-type alias Image =
-    { colorscheme : Colorscheme
+type alias Model =
+    { preset : Preset
+    , colorscheme : Colorscheme
     , progress : Float
     , system : System
     , controls : Controls.State
@@ -95,10 +91,18 @@ type Msg
 init : flags -> ( Model, Cmd Msg )
 init flags =
     let
-        loadCommand =
+        initialModel =
+            { preset = Koch
+            , colorscheme = Colorscheme.complementary Color.black
+            , progress = 1
+            , system = example
+            , controls = Controls.initialState
+            }
+
+        getRandomColor =
             Task.succeed Randomize |> Task.perform identity
     in
-    ( Loading, loadCommand )
+    ( initialModel, getRandomColor )
 
 
 
@@ -112,95 +116,47 @@ update msg model =
             ( model, Random.generate Build Colorscheme.random )
 
         Build colorscheme ->
-            let
-                image =
-                    { colorscheme = colorscheme
-                    , progress = 1
-                    , system = example
-                    , controls = Controls.initialState
-                    }
-            in
-            ( Page image Koch, Cmd.none )
+            ( { model | colorscheme = colorscheme }, Cmd.none )
 
         ChangeProgress progress ->
-            case model of
-                Loading ->
-                    ( model, Cmd.none )
-
-                Page image preset ->
-                    let
-                        page =
-                            Page { image | progress = progress } preset
-                    in
-                    ( page, Cmd.none )
+            ( { model | progress = progress }, Cmd.none )
 
         SelectPreset preset ->
-            case model of
-                Loading ->
-                    ( model, Cmd.none )
-
-                Page image _ ->
-                    ( Page { image | system = systemForPreset preset } preset, Cmd.none )
+            ( { model | preset = preset, system = systemForPreset preset }, Cmd.none )
 
         ChangeIterations string ->
-            case model of
-                Loading ->
-                    ( model, Cmd.none )
+            let
+                iterations =
+                    String.toInt string
+                        |> Maybe.withDefault model.system.iterations
 
-                Page image preset ->
-                    let
-                        iterations =
-                            String.toInt string
-                                |> Maybe.withDefault image.system.iterations
+                { system } =
+                    model
 
-                        { system } =
-                            image
-
-                        newSystem =
-                            { system | iterations = iterations }
-
-                        page =
-                            Page { image | system = newSystem } preset
-                    in
-                    ( page, Cmd.none )
+                newSystem =
+                    { system | iterations = iterations }
+            in
+            ( { model | system = newSystem }, Cmd.none )
 
         ChangeAngle string ->
-            case model of
-                Loading ->
-                    ( model, Cmd.none )
+            let
+                angle =
+                    String.toInt string
+                        |> Maybe.withDefault model.system.angle
 
-                Page image preset ->
-                    let
-                        angle =
-                            String.toInt string
-                                |> Maybe.withDefault image.system.angle
+                { system } =
+                    model
 
-                        { system } =
-                            image
-
-                        newSystem =
-                            { system | angle = angle }
-
-                        page =
-                            Page { image | system = newSystem } preset
-                    in
-                    ( page, Cmd.none )
+                newSystem =
+                    { system | angle = angle }
+            in
+            ( { model | system = newSystem }, Cmd.none )
 
         ShowEditor ->
-            case model of
-                Loading ->
-                    ( model, Cmd.none )
-
-                Page image preset ->
-                    ( Page { image | controls = image.controls |> Controls.show } preset, Cmd.none )
+            ( { model | controls = Controls.show model.controls }, Cmd.none )
 
         CloseEditor ->
-            case model of
-                Loading ->
-                    ( model, Cmd.none )
-
-                Page image preset ->
-                    ( Page { image | controls = image.controls |> Controls.hide } preset, Cmd.none )
+            ( { model | controls = Controls.hide model.controls }, Cmd.none )
 
 
 
@@ -218,21 +174,14 @@ subscriptions _ =
 
 view : Model -> Browser.Document Msg
 view model =
-    case model of
-        Loading ->
-            { title = "L-System Builder"
-            , body = [ Html.text "loading..." ]
-            }
-
-        Page image preset ->
-            { title = "L-System Builder"
-            , body =
-                [ Article.frame
-                    image.controls.visible
-                    (mastheadView image preset)
-                    (Html.div [] [])
-                ]
-            }
+    { title = "L-System Builder"
+    , body =
+        [ Article.frame
+            model.controls.visible
+            (mastheadView model model.preset)
+            (Html.div [] [])
+        ]
+    }
 
 
 systemConfig : System.Config Msg
@@ -240,7 +189,7 @@ systemConfig =
     System.config { onSwipe = ChangeProgress }
 
 
-mastheadView : Image -> Preset -> List (Html Msg)
+mastheadView : Model -> Preset -> List (Html Msg)
 mastheadView image preset =
     let
         state =
@@ -254,7 +203,7 @@ mastheadView image preset =
     ]
 
 
-controlsView : Image -> Preset -> Html Msg
+controlsView : Model -> Preset -> Html Msg
 controlsView image selectedPreset =
     let
         { system } =
