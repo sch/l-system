@@ -224,9 +224,20 @@ string text_ value =
     label text_ (Html.text value)
 
 
-int : Label -> Int -> (String -> msg) -> Html msg
-int labelText value handleChange =
+type alias IntField msg =
+    { label : Label
+    , msg : Int -> msg
+    }
+
+
+int : IntField msg -> Int -> Html msg
+int field value =
     let
+        toInt stringValue =
+            String.toInt stringValue
+                |> Maybe.withDefault value
+                |> field.msg
+
         input =
             Html.input
                 [ Html.Attributes.value (String.fromInt value)
@@ -235,16 +246,16 @@ int labelText value handleChange =
                 , Html.Attributes.size 5
                 , Html.Attributes.min "0"
                 , Html.Attributes.pattern "[0-9]*"
-                , Html.Events.onInput handleChange
                 , Html.Attributes.style "font-family" "inherit"
                 , Html.Attributes.style "font-size" "inherit"
                 , Html.Attributes.style "border-radius" "0.4em"
                 , Html.Attributes.style "outline" "none"
                 , Html.Attributes.style "width" "3em"
+                , Html.Events.onInput toInt
                 ]
                 []
     in
-    label labelText input
+    label field.label input
 
 
 union : Label -> List ( String, choice ) -> choice -> (choice -> msg) -> Html msg

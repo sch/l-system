@@ -83,8 +83,8 @@ type Msg
     | ShowEditor
     | CloseEditor
     | ChangeProgress Float
-    | ChangeAngle String
-    | ChangeIterations String
+    | ChangeAngle Int
+    | ChangeIterations Int
     | SelectPreset Preset
 
 
@@ -124,31 +124,23 @@ update msg model =
         SelectPreset preset ->
             ( { model | preset = preset, system = systemForPreset preset }, Cmd.none )
 
-        ChangeIterations string ->
+        ChangeIterations count ->
             let
-                iterations =
-                    String.toInt string
-                        |> Maybe.withDefault model.system.iterations
-
                 { system } =
                     model
 
                 newSystem =
-                    { system | iterations = iterations }
+                    { system | iterations = count }
             in
             ( { model | system = newSystem }, Cmd.none )
 
-        ChangeAngle string ->
+        ChangeAngle newAngle ->
             let
-                angle =
-                    String.toInt string
-                        |> Maybe.withDefault model.system.angle
-
                 { system } =
                     model
 
                 newSystem =
-                    { system | angle = angle }
+                    { system | angle = newAngle }
             in
             ( { model | system = newSystem }, Cmd.none )
 
@@ -245,12 +237,18 @@ controlsView image selectedPreset =
             , ( "Eyes", Eyes )
             ]
 
+        angleField =
+            Controls.int { label = "angle (degrees)", msg = ChangeAngle }
+
+        iterationsField =
+            Controls.int { label = "iterations", msg = ChangeIterations }
+
         controls =
             [ Controls.union "preset" presets selectedPreset SelectPreset
             , Controls.string "start rule" (String.fromList system.start)
             , Controls.dict "rules" rulesDict
-            , Controls.int "angle (degrees)" system.angle ChangeAngle
-            , Controls.int "iterations" system.iterations ChangeIterations
+            , angleField system.angle
+            , iterationsField system.iterations
             , Controls.text "valid characters in the rules include [ (add a new level on the stack), ] (pop a level off the stack), + (turn clockwise by given angle), - (counterclockwise), or another rule. The rules above will get expanded into:"
             ]
     in
