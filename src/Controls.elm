@@ -13,7 +13,7 @@ module Controls exposing
     , view
     )
 
-import Color exposing (Color)
+import Color
 import Dict exposing (Dict)
 import Html exposing (Html)
 import Html.Attributes
@@ -149,13 +149,14 @@ view (Config { openControls, hideControls, title }) state controls =
 
         body =
             if state.visible then
-                [ styleTag, heading hideControls title ]
-                    ++ [ Html.div
-                            [ Html.Attributes.style "display" "table"
-                            , Html.Attributes.style "padding" "0 40px"
-                            ]
-                            controls
-                       ]
+                [ styleTag
+                , heading hideControls title
+                , Html.div
+                    [ Html.Attributes.style "display" "table"
+                    , Html.Attributes.style "padding" "0 40px"
+                    ]
+                    controls
+                ]
 
             else
                 [ styleTag, sidewaysTitle title ]

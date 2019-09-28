@@ -9,7 +9,6 @@ built as an arbitrary view.
 
 import Html exposing (Html)
 import Html.Attributes
-import Html.Lazy
 
 
 {-| The pieces of an article are:
