@@ -50,6 +50,8 @@ type Preset
     | Mesh
     | Flower
     | Eyes
+    | City
+    | Rosegarden
 
 
 systemForPreset : Preset -> System
@@ -75,6 +77,12 @@ systemForPreset preset =
 
         Eyes ->
             Example.eyes
+
+        City ->
+            Example.city
+
+        Rosegarden ->
+            Example.tweet1277757501060988929
 
 
 type Msg
@@ -235,6 +243,8 @@ controlsView image selectedPreset =
             , ( "Mesh", Mesh )
             , ( "Flower", Flower )
             , ( "Eyes", Eyes )
+            , ( "City", City )
+            , ( "Rosegarden", Rosegarden )
             ]
 
         angleField =

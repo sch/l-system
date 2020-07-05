@@ -1,4 +1,22 @@
-module Example exposing (dragon, eyes, four, koch, one, parseAsSystem, plant, three, tweet896797261471989760, tweet897416367514689536, tweet897597535254130690, tweet897839129299374082, tweet898382707616501760, two)
+module Example exposing
+    ( dragon
+    , eyes
+    , four
+    , koch
+    , one
+    , parseAsSystem
+    , plant
+    , ranch
+    , three
+    , tweet1277757501060988929
+    , tweet896797261471989760
+    , tweet897416367514689536
+    , tweet897597535254130690
+    , tweet897839129299374082
+    , tweet898382707616501760
+    , two
+    , city
+    )
 
 import Dict exposing (Dict)
 import System exposing (System)
@@ -41,6 +59,16 @@ one =
             , ( 'H', "[-[[N]DS-]]" )
             , ( 'S', "[N-+SHDN]" )
             ]
+        }
+
+
+tweet1277757501060988929 : System
+tweet1277757501060988929 =
+    parseAsSystem
+        { start = "LFL"
+        , angle = 90
+        , iterations = 6
+        , rules = [ ( 'F', "FFF-FLF" ) ]
         }
 
 
@@ -221,4 +249,37 @@ eyes =
             [ ( 'T', "T-T-FFTF" )
             , ( 'F', "+-[-[-][]F]" )
             ]
+        }
+
+
+{-| <https://twitter.com/LSystemBot/status/1203785077739552768>
+-}
+ranch : System
+ranch =
+    parseAsSystem
+        { start = "FF"
+        , angle = 90
+        , iterations = 4
+        , rules =
+            [ ( 'F', "[]CFC+" )
+            , ( 'C', "[[]]-F[C-F]F" )
+            ]
+        }
+
+
+{-| <https://twitter.com/LSystemBot/status/1210745947291975680>
+-}
+city : System
+city =
+    parseAsSystem
+        { start = "F"
+        , rules =
+            [ ( 'F', "FFSF-FN+" )
+            , ( 'V', "[]F" )
+            , ( 'N', "FNSYN" )
+            , ( 'S', "[+N]++-+-" )
+            , ( 'Y', "V" )
+            ]
+        , angle = 45
+        , iterations = 5
         }
